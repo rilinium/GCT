@@ -92,6 +92,51 @@
       .title-long  { display: none; }
       .title-short { display: inline; }
     }
+
+    /* ── Mobile layout ── */
+    @media (max-width: 640px) {
+      /* Header spans full width */
+      #header { right: 0; padding: 8px 12px 6px; }
+      #header-top h1 { font-size: 11px; letter-spacing: 1px; }
+      .header-btn { font-size: 8px; padding: 4px 7px; letter-spacing: 0; }
+      .live-pill { padding: 3px 7px; font-size: 8px; }
+
+      /* Stats bar full width, smaller */
+      #stats-bar { top: 50px; left: 10px; right: 10px; gap: 6px; }
+      .stat-card { padding: 6px 10px 5px; min-width: 0; flex: 1; }
+      .stat-label { font-size: 7px; letter-spacing: 1px; }
+      .stat-value { font-size: 13px; }
+
+      /* Sidebar becomes bottom sheet */
+      #sidebar {
+        position: fixed;
+        top: auto; right: 0; left: 0; bottom: 0;
+        width: 100%; height: 48vh;
+        border-left: none;
+        border-top: 1px solid rgba(var(--accent-rgb), .25);
+        border-radius: 0;
+      }
+      #sidebar-header { padding: 10px 14px 8px; }
+      #sidebar-header h2 { font-size: 9px; margin-bottom: 6px; }
+      #agency-filter-row, #filter-row { gap: 5px; }
+      #agency-filter-row select, .s-select { font-size: 9px; padding: 4px 6px; }
+      #search-input { font-size: 9px; padding: 5px 8px; }
+
+      /* Footer sits above the bottom sheet */
+      #footer { right: 0; bottom: 48vh; padding: 6px 12px; }
+      #legend { gap: 10px; }
+      .leg { font-size: 8px; }
+      #last-updated { font-size: 8px; }
+
+      /* Detail panel full-width */
+      #detail-panel { width: 100%; border-left: none; border-top: 1px solid rgba(var(--accent-rgb),.2); }
+
+      /* Settings panel full width on mobile */
+      #settings-panel { width: 100%; }
+
+      /* Token prompt full width */
+      #token-prompt { width: 95vw; padding: 22px 20px; }
+    }
     .live-pill {
       display: flex; align-items: center; gap: 5px;
       padding: 3px 10px; border: 1px solid rgba(255,68,68,.6);
