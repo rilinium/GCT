@@ -660,6 +660,18 @@
 
     .s-divider { height: 1px; background: rgba(255,255,255,.04); margin: 6px 20px 0; }
 
+    #exp-warning {
+      margin: 8px 0 4px;
+      padding: 8px 10px;
+      background: rgba(255,136,0,.07);
+      border: 1px solid rgba(255,136,0,.25);
+      border-radius: 4px;
+      font-size: 9px;
+      color: #cc8822;
+      line-height: 1.6;
+      letter-spacing: .5px;
+    }
+
     /* Reset button */
     #settings-reset {
       margin: 16px 20px 0;
@@ -832,7 +844,7 @@
           </div>
           <input type="range" class="s-slider" id="si-pages" min="1" max="20" step="1" value="10"
             oninput="updateSlider('pages', this.value)">
-          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+          <div id="ticks-pages" style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
             <span>100</span><span>500</span><span>1,000</span><span>1,500</span><span>2,000</span>
           </div>
         </div>
@@ -844,9 +856,22 @@
           </div>
           <input type="range" class="s-slider" id="si-days" min="0" max="4" step="1" value="3"
             oninput="updateSlider('days', this.value)">
-          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+          <div id="ticks-days" style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
             <span>30d</span><span>60d</span><span>90d</span><span>180d</span><span>1yr</span>
           </div>
+        </div>
+
+        <div class="s-row" style="margin-top:10px">
+          <span class="s-label" style="display:flex;align-items:center;gap:5px">
+            <span style="color:#ff8800">⚠</span> Experimental mode
+          </span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-experimental" onchange="updateSetting('experimental', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+        <div id="exp-warning" style="display:none">
+          ⚠ Unlocks higher contract counts and longer date ranges. Large requests may be slow, hit API rate limits, or freeze your browser.
         </div>
 
         <div class="s-row">
@@ -1180,7 +1205,7 @@ function buildArcPositions(sLng, sLat, eLng, eLat) {
 }
 
 // ─── Settings ────────────────────────────────────────────────────────────────
-const DAY_PRESETS  = [30, 60, 90, 180, 365];
+const DAY_PRESETS  = [30, 60, 90, 180, 365, 730, 1825]; // last 2 only active in experimental mode
 const ROT_PRESETS  = [0, 0.00003, 0.00008, 0.00018, 0.00035];
 const ROT_LABELS   = ['Off','Slow','Normal','Fast','Max'];
 
@@ -1189,6 +1214,7 @@ const DEFAULT_SETTINGS = {
   hubs: true, arcs: true, arcOpacity: 35, scanlines: true,
   accent: '#00ff88',
   sort: 'amount',
+  experimental: false,
 };
 let CFG = { ...DEFAULT_SETTINGS };
 let refreshTimer = null;
@@ -1235,6 +1261,9 @@ function applyAllSettings() {
   clearInterval(refreshTimer);
   if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
 
+  // Experimental mode (must run before syncSettingsUI so slider max is set correctly)
+  applyExperimental(CFG.experimental);
+
   // Sync UI controls
   syncSettingsUI();
 }
@@ -1251,6 +1280,7 @@ function syncSettingsUI() {
   set('si-arcOpacity', CFG.arcOpacity);
   setCheck('si-scanlines', CFG.scanlines);
   set('si-sort', CFG.sort);
+  setCheck('si-experimental', CFG.experimental);
   // Display values
   updateDisplayValues();
   // Accent swatches
@@ -1263,6 +1293,31 @@ function updateDisplayValues() {
   if (el('sv-days'))       el('sv-days').textContent       = DAY_PRESETS[CFG.daysIdx] + ' days';
   if (el('sv-rotation'))   el('sv-rotation').textContent   = ROT_LABELS[CFG.rotIdx];
   if (el('sv-arcOpacity')) el('sv-arcOpacity').textContent = CFG.arcOpacity + '%';
+}
+
+function applyExperimental(on) {
+  const pagesSlider = document.getElementById('si-pages');
+  const daysSlider  = document.getElementById('si-days');
+  const ticksPages  = document.getElementById('ticks-pages');
+  const ticksDays   = document.getElementById('ticks-days');
+  const warning     = document.getElementById('exp-warning');
+  if (on) {
+    if (pagesSlider) pagesSlider.max = 50;
+    if (daysSlider)  daysSlider.max  = 6;
+    if (ticksPages)  ticksPages.innerHTML = '<span>100</span><span>1,000</span><span>2,000</span><span>3,500</span><span>5,000</span>';
+    if (ticksDays)   ticksDays.innerHTML  = '<span>30d</span><span>90d</span><span>1yr</span><span>2yr</span><span>5yr</span>';
+    if (warning)     warning.style.display = 'block';
+  } else {
+    if (CFG.pages > 20)   { CFG.pages = 20;   if (pagesSlider) pagesSlider.value = 20; }
+    if (CFG.daysIdx > 4)  { CFG.daysIdx = 4;  if (daysSlider)  daysSlider.value  = 4;  }
+    if (pagesSlider) pagesSlider.max = 20;
+    if (daysSlider)  daysSlider.max  = 4;
+    if (ticksPages)  ticksPages.innerHTML = '<span>100</span><span>500</span><span>1,000</span><span>1,500</span><span>2,000</span>';
+    if (ticksDays)   ticksDays.innerHTML  = '<span>30d</span><span>60d</span><span>90d</span><span>180d</span><span>1yr</span>';
+    if (warning)     warning.style.display = 'none';
+    updateDisplayValues();
+    saveSettings();
+  }
 }
 
 function updateSlider(key, rawVal) {
@@ -1283,10 +1338,11 @@ function updateSetting(key, val) {
     clearInterval(refreshTimer);
     if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
   }
-  if (key === 'hubs')      { CFG.hubs = !!val;      if (filtered.length) renderGlobe(filtered); }
-  if (key === 'arcs')      { CFG.arcs = !!val;      if (filtered.length) renderGlobe(filtered); }
-  if (key === 'scanlines') { CFG.scanlines = !!val;  document.body.classList.toggle('no-scanlines', !val); }
-  if (key === 'sort')      { CFG.sort = val;         sortMode = val; applyFilter(); }
+  if (key === 'hubs')         { CFG.hubs = !!val;         if (filtered.length) renderGlobe(filtered); }
+  if (key === 'arcs')         { CFG.arcs = !!val;         if (filtered.length) renderGlobe(filtered); }
+  if (key === 'scanlines')    { CFG.scanlines = !!val;    document.body.classList.toggle('no-scanlines', !val); }
+  if (key === 'sort')         { CFG.sort = val;           sortMode = val; applyFilter(); }
+  if (key === 'experimental') { CFG.experimental = !!val; applyExperimental(!!val); }
   saveSettings();
 }
 
