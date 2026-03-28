@@ -21,9 +21,6 @@
   <!-- Background -->
   <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- Scanlines -->
-  <rect width="1200" height="630" fill="url(#scanlines)" opacity="0.04"/>
-
   <!-- Grid lines -->
   <g stroke="#00ff88" stroke-width="0.4" opacity="0.06">
     <line x1="0" y1="105" x2="1200" y2="105"/>
@@ -99,19 +96,6 @@
 
   <!-- Main title -->
   <text x="60" y="200" font-family="monospace" font-size="15" fill="#00ff88" letter-spacing="6" opacity="0.7">GLOBAL CONTRACT TRACKER</text>
-
-  <!-- Big headline -->
-  <text x="55" y="310" font-family="monospace" font-size="26" fill="#00ff88" letter-spacing="3" opacity="0.85">REAL-TIME DoD CONTRACT INTELLIGENCE</text>
-
-  <!-- Stats row -->
-  <g font-family="monospace" fill="#aaccbb" font-size="13" opacity="0.8">
-    <text x="60" y="410">1,000+ CONTRACTS</text>
-    <text x="60" y="435">19 COUNTRIES</text>
-    <text x="60" y="460">REAL-TIME DATA</text>
-  </g>
-
-  <!-- Divider -->
-  <line x1="60" y1="385" x2="380" y2="385" stroke="#00ff88" stroke-width="0.5" opacity="0.3"/>
 
   <!-- URL -->
   <text x="60" y="560" font-family="monospace" font-size="16" fill="#00ff88" letter-spacing="2" opacity="0.6">gct.rilinium.com</text>
