@@ -95,47 +95,52 @@
 
     /* ── Mobile layout ── */
     @media (max-width: 640px) {
-      /* Header spans full width */
-      #header { right: 0; padding: 8px 12px 6px; }
-      #header-top h1 { font-size: 11px; letter-spacing: 1px; }
-      .header-btn { font-size: 8px; padding: 4px 7px; letter-spacing: 0; }
-      .live-pill { padding: 3px 7px; font-size: 8px; }
+      /* Cesium container: full screen minus bottom sheet */
+      #cesiumContainer { bottom: 48vh !important; }
 
-      /* Stats bar full width, smaller */
-      #stats-bar { top: 50px; left: 10px; right: 10px; gap: 6px; }
-      .stat-card { padding: 6px 10px 5px; min-width: 0; flex: 1; }
-      .stat-label { font-size: 7px; letter-spacing: 1px; }
-      .stat-value { font-size: 13px; }
+      /* Header: full width, compact */
+      #header { right: 0 !important; padding: 7px 10px 5px !important; }
+      #header-top { gap: 6px !important; }
+      #header-top h1 { font-size: 10px !important; letter-spacing: 1px !important; }
+      .header-btn { font-size: 8px !important; padding: 4px 6px !important; letter-spacing: 0 !important; }
+      .live-pill { padding: 2px 7px !important; font-size: 8px !important; }
 
-      /* Sidebar becomes bottom sheet */
+      /* Stats bar: full width below header */
+      #stats-bar { top: 46px !important; left: 8px !important; right: 8px !important; gap: 5px !important; }
+      .stat-card { padding: 5px 8px 4px !important; flex: 1 !important; min-width: 0 !important; }
+      .stat-label { font-size: 7px !important; letter-spacing: 1px !important; }
+      .stat-value { font-size: 12px !important; }
+
+      /* Sidebar: pinned to bottom as a sheet */
       #sidebar {
-        position: fixed;
-        top: auto; right: 0; left: 0; bottom: 0;
-        width: 100%; height: 48vh;
-        border-left: none;
-        border-top: 1px solid rgba(var(--accent-rgb), .25);
-        border-radius: 0;
+        position: fixed !important;
+        top: 52vh !important;
+        left: 0 !important; right: 0 !important; bottom: 0 !important;
+        width: 100% !important; height: 48vh !important;
+        border-left: none !important;
+        border-top: 1px solid rgba(var(--accent-rgb), .3) !important;
+        z-index: 20 !important;
       }
-      #sidebar-header { padding: 10px 14px 8px; }
-      #sidebar-header h2 { font-size: 9px; margin-bottom: 6px; }
-      #agency-filter-row, #filter-row { gap: 5px; }
-      #agency-filter-row select, .s-select { font-size: 9px; padding: 4px 6px; }
-      #search-input { font-size: 9px; padding: 5px 8px; }
+      #sidebar-header { padding: 8px 12px 6px !important; }
+      #sidebar-header h2 { font-size: 9px !important; margin-bottom: 5px !important; }
+      #agency-filter-row { gap: 5px !important; }
+      #filter-row { gap: 5px !important; }
+      #search-input { font-size: 9px !important; padding: 5px 8px !important; }
 
-      /* Footer sits above the bottom sheet */
-      #footer { right: 0; bottom: 48vh; padding: 6px 12px; }
-      #legend { gap: 10px; }
-      .leg { font-size: 8px; }
-      #last-updated { font-size: 8px; }
+      /* Footer: just above the sidebar sheet */
+      #footer { right: 0 !important; bottom: 48vh !important; padding: 5px 10px !important; }
+      #legend { gap: 8px !important; }
+      .leg { font-size: 8px !important; }
+      #last-updated { display: none !important; }
 
-      /* Detail panel full-width */
-      #detail-panel { width: 100%; border-left: none; border-top: 1px solid rgba(var(--accent-rgb),.2); }
+      /* Detail panel full width */
+      #detail-panel { width: 100% !important; border-left: none !important; border-top: 1px solid rgba(var(--accent-rgb),.2) !important; }
 
-      /* Settings panel full width on mobile */
-      #settings-panel { width: 100%; }
+      /* Settings panel full width */
+      #settings-panel { width: 100% !important; }
 
       /* Token prompt full width */
-      #token-prompt { width: 95vw; padding: 22px 20px; }
+      #token-prompt { width: 92vw !important; padding: 20px 18px !important; }
     }
     .live-pill {
       display: flex; align-items: center; gap: 5px;
