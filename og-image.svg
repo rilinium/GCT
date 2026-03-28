@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#001a0d"/>
+      <stop offset="100%" stop-color="#000408"/>
+    </radialGradient>
+    <radialGradient id="globe" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#003322"/>
+      <stop offset="100%" stop-color="#000e08"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Scanlines -->
+  <rect width="1200" height="630" fill="url(#scanlines)" opacity="0.04"/>
+
+  <!-- Grid lines -->
+  <g stroke="#00ff88" stroke-width="0.4" opacity="0.06">
+    <line x1="0" y1="105" x2="1200" y2="105"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="315" x2="1200" y2="315"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+    <line x1="0" y1="525" x2="1200" y2="525"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+  </g>
+
+  <!-- Globe circle -->
+  <circle cx="820" cy="315" r="230" fill="url(#globe)" stroke="#00ff88" stroke-width="1" opacity="0.9"/>
+  <circle cx="820" cy="315" r="230" fill="none" stroke="#00ff88" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- Globe latitude lines -->
+  <g stroke="#00ff88" stroke-width="0.6" fill="none" opacity="0.2">
+    <ellipse cx="820" cy="315" rx="230" ry="46"/>
+    <ellipse cx="820" cy="315" rx="230" ry="115"/>
+    <ellipse cx="820" cy="315" rx="230" ry="184"/>
+    <line x1="820" y1="85" x2="820" y2="545"/>
+    <ellipse cx="820" cy="315" rx="115" ry="230"/>
+    <ellipse cx="820" cy="315" rx="46" ry="230"/>
+  </g>
+
+  <!-- Globe glow -->
+  <circle cx="820" cy="315" r="235" fill="none" stroke="#00ff88" stroke-width="12" opacity="0.04" filter="url(#glow2)"/>
+
+  <!-- Contract dots on globe -->
+  <circle cx="750" cy="270" r="8" fill="#ff4444" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="790" cy="295" r="6" fill="#ff8800" opacity="0.85" filter="url(#glow)"/>
+  <circle cx="830" cy="260" r="10" fill="#ff4444" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="860" cy="310" r="5" fill="#ffcc00" opacity="0.8"/>
+  <circle cx="780" cy="330" r="7" fill="#ff4444" opacity="0.85" filter="url(#glow)"/>
+  <circle cx="840" cy="340" r="9" fill="#ff8800" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="870" cy="280" r="6" fill="#ff4444" opacity="0.8"/>
+  <circle cx="910" cy="320" r="5" fill="#ffcc00" opacity="0.75"/>
+  <circle cx="760" cy="350" r="4" fill="#ff8800" opacity="0.7"/>
+  <circle cx="820" cy="380" r="7" fill="#ff4444" opacity="0.8" filter="url(#glow)"/>
+
+  <!-- Arc lines -->
+  <g stroke="#ff4444" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="4,4">
+    <path d="M 820 190 Q 700 250 750 270"/>
+    <path d="M 820 190 Q 860 230 830 260"/>
+    <path d="M 820 190 Q 780 240 790 295"/>
+    <path d="M 820 190 Q 850 270 860 310"/>
+    <path d="M 820 190 Q 870 260 870 280"/>
+  </g>
+
+  <!-- Agency hub dot -->
+  <circle cx="820" cy="190" r="10" fill="#00aaff" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="820" cy="190" r="16" fill="none" stroke="#00aaff" stroke-width="1" opacity="0.4"/>
+
+  <!-- Border frame -->
+  <rect x="2" y="2" width="1196" height="626" fill="none" stroke="#00ff88" stroke-width="1.5" opacity="0.3"/>
+  <rect x="8" y="8" width="1184" height="614" fill="none" stroke="#00ff88" stroke-width="0.5" opacity="0.1"/>
+
+  <!-- Corner brackets -->
+  <g stroke="#00ff88" stroke-width="2" fill="none" opacity="0.6">
+    <path d="M 2 40 L 2 2 L 40 2"/>
+    <path d="M 1160 2 L 1198 2 L 1198 40"/>
+    <path d="M 2 590 L 2 628 L 40 628"/>
+    <path d="M 1160 628 L 1198 628 L 1198 590"/>
+  </g>
+
+  <!-- Live pill -->
+  <rect x="60" y="55" width="72" height="22" rx="11" fill="none" stroke="#ff4444" stroke-width="1.5" opacity="0.8"/>
+  <circle cx="76" cy="66" r="4" fill="#ff4444" opacity="0.9"/>
+  <text x="86" y="70" font-family="monospace" font-size="11" fill="#ff6666" letter-spacing="2" opacity="0.9">LIVE</text>
+
+  <!-- Main title -->
+  <text x="60" y="200" font-family="monospace" font-size="15" fill="#00ff88" letter-spacing="6" opacity="0.7">GLOBAL CONTRACT TRACKER</text>
+
+  <!-- Big headline -->
+  <text x="55" y="310" font-family="monospace" font-size="26" fill="#00ff88" letter-spacing="3" opacity="0.85">REAL-TIME DoD CONTRACT INTELLIGENCE</text>
+
+  <!-- Stats row -->
+  <g font-family="monospace" fill="#aaccbb" font-size="13" opacity="0.8">
+    <text x="60" y="410">1,000+ CONTRACTS</text>
+    <text x="60" y="435">19 COUNTRIES</text>
+    <text x="60" y="460">REAL-TIME DATA</text>
+  </g>
+
+  <!-- Divider -->
+  <line x1="60" y1="385" x2="380" y2="385" stroke="#00ff88" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- URL -->
+  <text x="60" y="560" font-family="monospace" font-size="16" fill="#00ff88" letter-spacing="2" opacity="0.6">gct.rilinium.com</text>
+
+  <!-- Accent line at bottom -->
+  <rect x="0" y="620" width="1200" height="3" fill="#00ff88" opacity="0.4"/>
+  <rect x="0" y="0" width="1200" height="3" fill="#00ff88" opacity="0.4"/>
+</svg>
