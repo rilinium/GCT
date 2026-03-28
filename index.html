@@ -288,7 +288,96 @@
     }
     .contract-card:hover { background: rgba(var(--accent-rgb),.06); border-left-color: rgba(var(--accent-rgb),.5); }
     .contract-card.active { background: rgba(var(--accent-rgb),.09); border-left-color: var(--accent); box-shadow: inset 2px 0 8px rgba(var(--accent-rgb),.1); }
-    .c-recipient { font-size: 10px; font-weight: 600; color: #cceedd; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .5px; }
+    .c-recipient { font-size: 10px; font-weight: 600; color: #cceedd; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .5px; cursor: pointer; }
+    .c-recipient:hover { color: var(--accent); text-decoration: underline; }
+
+    /* ── Company Profile Panel ── */
+    #company-panel {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
+      background: linear-gradient(180deg, rgba(0,4,18,.98) 0%, rgba(0,2,12,.98) 100%);
+      border-left: 1px solid rgba(var(--accent-rgb),.25);
+      backdrop-filter: blur(18px); z-index: 20;
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    #company-panel.open { transform: translateX(0); }
+    #company-panel-header {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid rgba(var(--accent-rgb),.1);
+      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+    }
+    #company-back-btn {
+      background: none; border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      padding: 4px 8px; border-radius: 3px; cursor: pointer; letter-spacing: 1px;
+      flex-shrink: 0; transition: background .15s;
+    }
+    #company-back-btn:hover { background: rgba(var(--accent-rgb),.1); }
+    #company-name-display {
+      font-family: 'Orbitron', monospace; font-size: 9px; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      text-shadow: 0 0 8px rgba(var(--accent-rgb),.4); flex: 1;
+    }
+    #company-body { flex: 1; overflow-y: auto; }
+    #company-body::-webkit-scrollbar { width: 2px; }
+    #company-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
+    .cp-section { padding: 12px 14px; border-bottom: 1px solid rgba(var(--accent-rgb),.06); }
+    .cp-section-title {
+      font-family: 'Orbitron', monospace; font-size: 7px; font-weight: 700;
+      color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
+      opacity: .6; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cp-section-title::after { content: ''; flex: 1; height: 1px; background: rgba(var(--accent-rgb),.12); }
+    #cp-stock-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    #cp-ticker-input {
+      background: rgba(var(--accent-rgb),.06); border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      padding: 5px 8px; border-radius: 3px; width: 72px; text-transform: uppercase; letter-spacing: 2px;
+    }
+    #cp-ticker-input:focus { outline: none; border-color: var(--accent); }
+    #cp-ticker-btn {
+      background: rgba(var(--accent-rgb),.08); border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-family: 'Share Tech Mono', monospace; font-size: 9px;
+      padding: 5px 10px; border-radius: 3px; cursor: pointer; letter-spacing: 1px; transition: background .15s;
+    }
+    #cp-ticker-btn:hover { background: rgba(var(--accent-rgb),.18); }
+    #cp-price-display {
+      font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700;
+      color: #cceedd; letter-spacing: 1px; margin-bottom: 2px; min-height: 28px;
+    }
+    #cp-price-change { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px; }
+    #cp-price-change.up { color: #00ff88; }
+    #cp-price-change.down { color: #ff4466; }
+    #cp-market-state { font-size: 8px; color: rgba(255,255,255,.3); letter-spacing: 1px; margin-top: 2px; font-family: 'Share Tech Mono', monospace; }
+    #cp-yf-attribution { font-size: 8px; color: rgba(255,255,255,.2); font-family: 'Share Tech Mono', monospace; margin-top: 8px; letter-spacing: .5px; }
+    .cp-load-all-btn {
+      width: 100%; margin-top: 10px; padding: 7px;
+      background: rgba(var(--accent-rgb),.06); border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-family: 'Share Tech Mono', monospace; font-size: 9px;
+      letter-spacing: 2px; border-radius: 3px; cursor: pointer; text-transform: uppercase; transition: background .15s;
+    }
+    .cp-load-all-btn:hover { background: rgba(var(--accent-rgb),.14); }
+    .cp-load-all-btn:disabled { opacity: .4; cursor: default; }
+    .cp-stock-hint { font-size: 9px; color: rgba(255,255,255,.3); letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; }
+    .cp-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .cp-stat-box { background: rgba(var(--accent-rgb),.04); border: 1px solid rgba(var(--accent-rgb),.1); border-radius: 4px; padding: 8px 10px; }
+    .cp-stat-label { font-size: 7px; color: rgba(255,255,255,.4); letter-spacing: 2px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; }
+    .cp-stat-value { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--accent); font-weight: 700; }
+    .cp-stat-value .amt-suffix { font-size: 9px; color: rgba(var(--accent-rgb),.5); font-weight: 400; margin-left: 1px; }
+    .cp-agency-row { margin-bottom: 8px; }
+    .cp-agency-label { display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: rgba(255,255,255,.7); margin-bottom: 3px; font-family: 'Share Tech Mono', monospace; gap: 8px; }
+    .cp-agency-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cp-agency-amt { color: var(--accent); flex-shrink: 0; }
+    .cp-bar-track { background: rgba(var(--accent-rgb),.08); border-radius: 2px; height: 3px; }
+    .cp-bar-fill { background: var(--accent); border-radius: 2px; height: 3px; transition: width .5s ease; }
+    .cp-contract-row { padding: 7px 0; border-bottom: 1px solid rgba(var(--accent-rgb),.04); cursor: pointer; transition: background .12s; }
+    .cp-contract-row:hover { background: rgba(var(--accent-rgb),.06); margin: 0 -14px; padding: 7px 14px; }
+    .cp-contract-row:last-child { border-bottom: none; }
+    .cp-c-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+    .cp-c-agency { font-size: 8px; color: rgba(255,255,255,.4); font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .cp-c-date { font-size: 8px; color: rgba(255,255,255,.3); flex-shrink: 0; margin-left: 8px; }
     .c-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
     .c-amount { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; }
     .c-location { font-size: 9px; color: #446655; }
@@ -793,6 +882,15 @@
   <div id="contracts-list"></div>
 </div>
 
+<!-- Company Profile Panel -->
+<div id="company-panel">
+  <div id="company-panel-header">
+    <button id="company-back-btn" onclick="closeCompanyProfile()">← Back</button>
+    <div id="company-name-display">—</div>
+  </div>
+  <div id="company-body"></div>
+</div>
+
 <div id="tooltip">
   <h3 id="tt-name"></h3>
   <div class="tt-row"><span class="tt-lbl">Amount</span><span class="tt-val" id="tt-amount"></span></div>
@@ -1160,6 +1258,9 @@ function fmt$(n) {
   if (v >= 1e6)  return `$${(n/1e6).toFixed(1)}M`;
   if (v >= 1e3)  return `$${(n/1e3).toFixed(0)}K`;
   return `$${Math.round(n).toLocaleString()}`;
+}
+function fmt$Html(n) {
+  return fmt$(n).replace(/([TBMK])$/, '<span class="amt-suffix">$1</span>');
 }
 function tier(n) {
   if (n >= 1e9) return 'mega'; if (n >= 1e8) return 'large';
@@ -1620,9 +1721,306 @@ function renderSidebar(contracts) {
       <div class="c-agency" title="${c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
       <div class="c-date">${fmtDate(c['Last Modified Date'])}</div>
     `;
+    div.querySelector('.c-recipient').addEventListener('click', e => {
+      e.stopPropagation();
+      openCompanyProfile(name);
+    });
     div.addEventListener('click', () => focusContract(c._id));
     list.appendChild(div);
   });
+}
+
+// ─── Company Profile ─────────────────────────────────────────────────────────
+const companyTickerCache = {};
+
+const YF_PROXY = 'https://corsproxy.io/?';
+
+async function lookupTicker(companyName) {
+  try {
+    const q = encodeURIComponent(companyName);
+    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${q}&quotesCount=3&newsCount=0&enableFuzzyQuery=false`;
+    const r = await fetch(YF_PROXY + url);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const eq = (d.quotes || []).filter(q => q.quoteType === 'EQUITY');
+    return eq.length ? eq[0].symbol : null;
+  } catch { return null; }
+}
+
+async function fetchStockPrice(ticker) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+    const r = await fetch(YF_PROXY + url);
+    if (!r.ok) return null;
+    const d = await r.json();
+    const meta = d.chart?.result?.[0]?.meta;
+    if (!meta || !meta.regularMarketPrice) return null;
+    const prev = meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice;
+    const price = meta.regularMarketPrice;
+    return {
+      symbol: meta.symbol,
+      price,
+      change: price - prev,
+      changePct: ((price - prev) / prev * 100),
+      currency: meta.currency || 'USD',
+      marketState: meta.marketState,
+    };
+  } catch { return null; }
+}
+
+function buildCompanyStats(name, contractList) {
+  const contracts = contractList || allContracts.filter(c => c['Recipient Name'] === name);
+  const total = contracts.reduce((s, c) => s + c._amt, 0);
+  const agencies = {};
+  contracts.forEach(c => {
+    const ag = c['Awarding Agency'] || 'Unknown';
+    agencies[ag] = (agencies[ag] || 0) + c._amt;
+  });
+  const agencySorted = Object.entries(agencies).sort((a, b) => b[1] - a[1]);
+  const dates = contracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
+  const dateRange = dates.length > 1 ? { from: dates[0].slice(0,10), to: dates[dates.length-1].slice(0,10) } : dates.length === 1 ? { from: dates[0].slice(0,10), to: dates[0].slice(0,10) } : null;
+  return { name, contracts, total, agencies: agencySorted, dateRange };
+}
+
+async function fetchCompanyContracts(name) {
+  const end = new Date(), start = new Date('2007-10-01');
+  const fmt = d => d.toISOString().split('T')[0];
+  const fields = [
+    'Award ID','Recipient Name','Award Amount','Description',
+    'Awarding Agency','Awarding Sub Agency','Last Modified Date',
+    'Place of Performance City Name','Place of Performance State Code',
+    'Place of Performance Country Code','Place of Performance Country Name',
+    'generated_internal_id',
+  ];
+  const filters = {
+    award_type_codes: ['A','B','C','D'],
+    time_period: [{ start_date: fmt(start), end_date: fmt(end) }],
+    recipient_search_text: [name],
+  };
+  const fetchPage = async page => {
+    const res = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filters, fields, page, limit: 100, sort: 'Award Amount', order: 'desc' }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()).results || [];
+  };
+  // Fetch in parallel batches of 10 pages; stop if a batch returns any short page
+  const all = [];
+  const BATCH = 10, MAX_PAGES = 100;
+  for (let batch = 0; batch < MAX_PAGES / BATCH; batch++) {
+    const pages = Array.from({ length: BATCH }, (_, i) => batch * BATCH + i + 1);
+    const results = await Promise.all(pages.map(fetchPage));
+    results.flat().forEach((r, i) => {
+      r._id  = r.generated_internal_id || `api-${i}`;
+      r._amt = parseFloat(r['Award Amount']) || 0;
+    });
+    all.push(...results.flat());
+    if (results.some(r => r.length < 100)) break;
+  }
+  return all;
+}
+
+function renderCompanySummaryHtml(stats, fromApi) {
+  const safeName = stats.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const dateBox = stats.dateRange
+    ? `<div class="cp-stat-box" style="grid-column:1/-1">
+        <div class="cp-stat-label">Date Range</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent)">${stats.dateRange.from} → ${stats.dateRange.to}</div>
+       </div>`
+    : '';
+  const sourceNote = fromApi
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From USASpending API · Since Oct 2007</div>`
+    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset</div>
+       <button class="cp-load-all-btn" onclick="loadAllCompanyContracts('${safeName}')">⬇ Load All from API</button>`;
+  return `
+    <div class="cp-section-title">Summary</div>
+    <div class="cp-stats-grid">
+      <div class="cp-stat-box">
+        <div class="cp-stat-label">Contracts</div>
+        <div class="cp-stat-value">${stats.contracts.length.toLocaleString()}</div>
+      </div>
+      <div class="cp-stat-box">
+        <div class="cp-stat-label">Total Value</div>
+        <div class="cp-stat-value">${fmt$Html(stats.total)}</div>
+      </div>
+      <div class="cp-stat-box" style="grid-column:1/-1">
+        <div class="cp-stat-label">Agencies</div>
+        <div class="cp-stat-value">${stats.agencies.length}</div>
+      </div>
+      ${dateBox}
+    </div>
+    ${sourceNote}`;
+}
+
+function renderCompanyAgenciesHtml(stats) {
+  if (!stats.agencies.length) return '';
+  const maxAmt = stats.agencies[0][1];
+  const rows = stats.agencies.slice(0, 8).map(([ag, amt]) => {
+    const pct = Math.round((amt / maxAmt) * 100);
+    return `<div class="cp-agency-row">
+      <div class="cp-agency-label">
+        <span class="cp-agency-name" title="${ag}">${ag}</span>
+        <span class="cp-agency-amt">${fmt$(amt)}</span>
+      </div>
+      <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  return `<div class="cp-section"><div class="cp-section-title">Sells To</div>${rows}</div>`;
+}
+
+function renderCompanyContractsHtml(stats) {
+  if (!stats.contracts.length) return `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace">No contracts found.</div>`;
+  const safeId = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const rows = stats.contracts.slice(0, 100).map(c => `
+    <div class="cp-contract-row" onclick="focusContract('${safeId(c._id)}');closeCompanyProfile()">
+      <div class="cp-c-top">
+        <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
+        <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
+      </div>
+      <div class="cp-c-agency" title="${c['Awarding Sub Agency'] || c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+    </div>`).join('');
+  const more = stats.contracts.length > 100 ? `<div style="font-size:8px;color:rgba(255,255,255,.3);padding:6px 0;text-align:center;font-family:'Share Tech Mono',monospace">Showing top 100 of ${stats.contracts.length}</div>` : '';
+  return `<div class="cp-section"><div class="cp-section-title">Contracts (${stats.contracts.length})</div>${rows}${more}</div>`;
+}
+
+async function loadAllCompanyContracts(name) {
+  const btn = document.querySelector('.cp-load-all-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    const contracts = await fetchCompanyContracts(name);
+    const stats = buildCompanyStats(name, contracts);
+    const summaryEl   = document.getElementById('cp-summary-section');
+    const agenciesEl  = document.getElementById('cp-agencies-section');
+    const contractsEl = document.getElementById('cp-contracts-section');
+    if (summaryEl)   summaryEl.innerHTML   = renderCompanySummaryHtml(stats, true);
+    if (agenciesEl)  agenciesEl.innerHTML  = renderCompanyAgenciesHtml(stats);
+    if (contractsEl) contractsEl.innerHTML = renderCompanyContractsHtml(stats);
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ Load All from API'; }
+    const summaryEl = document.getElementById('cp-summary-section');
+    if (summaryEl) {
+      const err = document.createElement('div');
+      err.style.cssText = 'font-size:9px;color:#ff4466;font-family:\'Share Tech Mono\',monospace;margin-top:6px;';
+      err.textContent = 'Failed to load: ' + e.message;
+      summaryEl.appendChild(err);
+    }
+  }
+}
+
+async function openCompanyProfile(name) {
+  const panel   = document.getElementById('company-panel');
+  const nameEl  = document.getElementById('company-name-display');
+  const body    = document.getElementById('company-body');
+
+  nameEl.textContent = name;
+  body.innerHTML = `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">Loading…</div>`;
+  panel.classList.add('open');
+
+  const stats   = buildCompanyStats(name);
+  const maxAmt  = stats.agencies.length ? stats.agencies[0][1] : 1;
+  const cached  = companyTickerCache[name] || '';
+
+  const agencyRows = stats.agencies.slice(0, 8).map(([ag, amt]) => {
+    const pct = Math.round((amt / maxAmt) * 100);
+    return `<div class="cp-agency-row">
+      <div class="cp-agency-label">
+        <span class="cp-agency-name" title="${ag}">${ag}</span>
+        <span class="cp-agency-amt">${fmt$(amt)}</span>
+      </div>
+      <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  const safeId  = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const contractRows = stats.contracts.slice(0, 50).map(c => `
+    <div class="cp-contract-row" onclick="focusContract('${safeId(c._id)}');closeCompanyProfile()">
+      <div class="cp-c-top">
+        <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
+        <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
+      </div>
+      <div class="cp-c-agency" title="${c['Awarding Sub Agency'] || c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+    </div>`).join('');
+
+  const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+  body.innerHTML = `
+    <div class="cp-section">
+      <div class="cp-section-title">Stock</div>
+      <div id="cp-stock-row">
+        <input id="cp-ticker-input" type="text" placeholder="TICKER" maxlength="8" value="${cached}" oninput="this.value=this.value.toUpperCase()">
+        <button id="cp-ticker-btn" onclick="refreshStockPrice('${safeName}')">↻ Load</button>
+      </div>
+      <div id="cp-stock-hint" class="cp-stock-hint"></div>
+      <div id="cp-price-display"></div>
+      <div id="cp-price-change"></div>
+      <div id="cp-market-state"></div>
+      <div id="cp-yf-attribution">Data provided by <a href="https://finance.yahoo.com" target="_blank" style="color:rgba(255,255,255,.35);text-decoration:none">Yahoo Finance</a></div>
+    </div>
+    <div class="cp-section" id="cp-summary-section">
+      ${renderCompanySummaryHtml(stats, false)}
+    </div>
+    <div id="cp-agencies-section">
+      ${renderCompanyAgenciesHtml(stats)}
+    </div>
+    <div id="cp-contracts-section">
+      ${renderCompanyContractsHtml(stats)}
+    </div>
+  `;
+
+  // Auto-detect ticker if not cached
+  if (!cached) {
+    document.getElementById('cp-stock-hint').textContent = 'Looking up ticker…';
+    lookupTicker(name).then(async ticker => {
+      const hint = document.getElementById('cp-stock-hint');
+      if (hint) hint.textContent = '';
+      if (ticker) {
+        companyTickerCache[name] = ticker;
+        const input = document.getElementById('cp-ticker-input');
+        if (input) input.value = ticker;
+        await refreshStockPrice(name);
+      } else {
+        const priceEl = document.getElementById('cp-price-display');
+        if (priceEl) priceEl.innerHTML = `<span style="font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace">Enter ticker manually</span>`;
+      }
+    });
+  } else {
+    await refreshStockPrice(name);
+  }
+}
+
+async function refreshStockPrice(companyName) {
+  const input = document.getElementById('cp-ticker-input');
+  if (!input) return;
+  const ticker = input.value.trim().toUpperCase();
+  if (!ticker) return;
+  companyTickerCache[companyName] = ticker;
+
+  const priceEl  = document.getElementById('cp-price-display');
+  const changeEl = document.getElementById('cp-price-change');
+  const stateEl  = document.getElementById('cp-market-state');
+  if (priceEl)  priceEl.innerHTML  = `<span class="cp-stock-hint">Loading…</span>`;
+  if (changeEl) changeEl.textContent = '';
+  if (stateEl)  stateEl.textContent  = '';
+
+  const data = await fetchStockPrice(ticker);
+  if (!data) {
+    if (priceEl) priceEl.innerHTML = `<span style="font-size:9px;color:#ff4466;font-family:'Share Tech Mono',monospace">Price unavailable — check ticker</span>`;
+    return;
+  }
+  const sign = data.change >= 0 ? '+' : '';
+  if (priceEl)  priceEl.textContent  = `$${data.price.toFixed(2)}`;
+  if (changeEl) {
+    changeEl.textContent  = `${sign}${data.change.toFixed(2)} (${sign}${data.changePct.toFixed(2)}%)`;
+    changeEl.className    = 'cp-price-change ' + (data.change >= 0 ? 'up' : 'down');
+  }
+  if (stateEl) {
+    const states = { REGULAR: 'Market Open', PRE: 'Pre-Market', POST: 'After Hours', POSTPOST: 'After Hours', PREPRE: 'Pre-Market', CLOSED: 'Market Closed' };
+    stateEl.textContent = states[data.marketState] || data.marketState || '';
+  }
+}
+
+function closeCompanyProfile() {
+  document.getElementById('company-panel').classList.remove('open');
 }
 
 function countUp(el, from, to, fmt, ms = 600) {
