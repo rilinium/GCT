@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Global Contract Tracker</title>
+
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent: #00ff88;
+      --accent-rgb: 0, 255, 136;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; color: #fff; font-family: 'Share Tech Mono', 'Courier New', monospace; overflow: hidden; height: 100vh; }
+
+    /* ── Scanline overlay ── */
+    body::after {
+      content: ''; position: fixed; inset: 0; z-index: 999; pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px);
+      transition: opacity .3s;
+    }
+    body.no-scanlines::after { opacity: 0; }
+
+    #cesiumContainer { position: absolute; inset: 0; }
+
+    /* Hide Cesium default chrome */
+    .cesium-viewer-toolbar,
+    .cesium-viewer-animationContainer,
+    .cesium-viewer-timelineContainer,
+    .cesium-viewer-fullscreenContainer,
+    .cesium-viewer-vrContainer { display: none !important; }
+    .cesium-credit-logoContainer { display: none !important; }
+    .cesium-credit-textContainer {
+      right: 328px !important; font-size: 9px !important;
+      opacity: 0.3 !important; bottom: 2px !important;
+    }
+
+    /* ── Animations ── */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse-glow {
+      0%,100% { box-shadow: 0 0 6px rgba(var(--accent-rgb),.3), inset 0 0 6px rgba(var(--accent-rgb),.05); }
+      50%      { box-shadow: 0 0 18px rgba(var(--accent-rgb),.55), inset 0 0 12px rgba(var(--accent-rgb),.1); }
+    }
+    @keyframes glitch {
+      0%,90%,100% { transform: translate(0); clip-path: none; }
+      91% { transform: translate(-2px,0); clip-path: polygon(0 20%,100% 20%,100% 40%,0 40%); color: #00aaff; }
+      93% { transform: translate(2px,0);  clip-path: polygon(0 60%,100% 60%,100% 80%,0 80%); color: #ff0044; }
+      95% { transform: translate(0);      clip-path: none; }
+    }
+    @keyframes sweep-border {
+      0%   { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    @keyframes flicker {
+      0%,19%,21%,23%,25%,54%,56%,100% { opacity: 1; }
+      20%,22%,24%,55% { opacity: .6; }
+    }
+    @keyframes data-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes corner-pulse {
+      0%,100% { opacity: .5; } 50% { opacity: 1; }
+    }
+
+    /* ── Header ── */
+    #header {
+      position: absolute; top: 0; left: 0; right: 320px; z-index: 10;
+      padding: 10px 20px 8px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.92) 60%, transparent);
+      display: flex; flex-direction: column; gap: 6px;
+      border-bottom: 1px solid rgba(var(--accent-rgb),.1);
+    }
+    #header-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    #header-top h1 {
+      font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 900;
+      color: var(--accent); text-transform: uppercase; letter-spacing: 2px;
+      animation: glitch 8s infinite; text-shadow: 0 0 20px var(--accent-glow);
+      white-space: nowrap; flex-shrink: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    #header-btns { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+    .header-btn { font-size: 9px; padding: 5px 9px; letter-spacing: 1px; }
+    .title-short { display: none; }
+    .title-long  { display: inline; }
+    @media (max-width: 960px) {
+      .title-long  { display: none; }
+      .title-short { display: inline; }
+    }
+    .live-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border: 1px solid rgba(255,68,68,.6);
+      border-radius: 20px; font-size: 9px; color: #ff6666; letter-spacing: 2px;
+      background: rgba(255,50,50,.08); box-shadow: 0 0 8px rgba(255,50,50,.2);
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4444; animation: blink 1s ease-in-out infinite; box-shadow: 0 0 6px #ff4444; }
+    .header-btn {
+      background: rgba(var(--accent-rgb),.06); border: 1px solid rgba(var(--accent-rgb),.3);
+      border-radius: 3px; color: var(--accent); font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; padding: 5px 13px; cursor: pointer; letter-spacing: 2px;
+      transition: background .15s, box-shadow .15s;
+      text-transform: uppercase;
+    }
+    .header-btn:hover { background: rgba(var(--accent-rgb),.15); box-shadow: 0 0 10px rgba(var(--accent-rgb),.3); }
+    #header-btns { margin-left: auto; display: flex; gap: 8px; }
+    #spin-btn.paused { background: rgba(255,100,100,.08); border-color: rgba(255,100,100,.4); color: #ff8888; }
+    #spin-btn.paused:hover { background: rgba(255,100,100,.18); box-shadow: 0 0 10px rgba(255,80,80,.3); }
+
+    /* ── Stats bar ── */
+    #stats-bar {
+      position: absolute; top: 62px; left: 20px; z-index: 10;
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .stat-card {
+      background: rgba(0,8,24,.9); border: 1px solid rgba(var(--accent-rgb),.2);
+      border-radius: 4px; padding: 8px 16px; backdrop-filter: blur(14px); min-width: 105px;
+      position: relative; overflow: hidden;
+      animation: pulse-glow 4s ease-in-out infinite;
+    }
+    .stat-card::before, .stat-card::after {
+      content: ''; position: absolute; width: 6px; height: 6px;
+      border-color: var(--accent); border-style: solid; opacity: .6;
+      animation: corner-pulse 3s ease-in-out infinite;
+    }
+    .stat-card::before { top: 3px; left: 3px; border-width: 1px 0 0 1px; }
+    .stat-card::after  { bottom: 3px; right: 3px; border-width: 0 1px 1px 0; }
+    .stat-label { font-size: 8px; color: #4a8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+    .stat-value {
+      font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; color: var(--accent);
+      text-shadow: 0 0 12px rgba(var(--accent-rgb),.7); animation: flicker 12s infinite;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
+      background: linear-gradient(180deg, rgba(0,4,18,.97) 0%, rgba(0,2,12,.97) 100%);
+      border-left: 1px solid rgba(var(--accent-rgb),.15);
+      backdrop-filter: blur(18px); z-index: 10; display: flex; flex-direction: column;
+    }
+    #sidebar::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: sweep-border 3s linear infinite;
+      background-size: 200% 100%;
+    }
+    #sidebar-header { padding: 16px 14px 12px; border-bottom: 1px solid rgba(var(--accent-rgb),.1); flex-shrink: 0; }
+    #sidebar-header h2 {
+      font-family: 'Orbitron', monospace; font-size: 10px; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px;
+      text-shadow: 0 0 8px rgba(var(--accent-rgb),.5);
+    }
+    #agency-filter-row { margin-bottom: 7px; }
+    #agency-filter-row select {
+      width: 100%; background: rgba(0,30,60,.6); border: 1px solid rgba(0,170,255,.35);
+      border-radius: 3px; padding: 6px 10px; color: #00ccff; font-size: 10px;
+      font-family: 'Share Tech Mono', monospace; outline: none; cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,170,255,.1) inset;
+    }
+    #agency-filter-row select:focus { border-color: #00aaff; box-shadow: 0 0 10px rgba(0,170,255,.25); }
+    #agency-filter-row select option { background: #000d1f; color: #ccc; }
+    #filter-row { display: flex; gap: 7px; }
+    #search-wrap {
+      flex: 1; position: relative; display: flex; align-items: center;
+    }
+    #search-input {
+      width: 100%; background: rgba(255,255,255,.04); border: 1px solid rgba(var(--accent-rgb),.2);
+      border-radius: 3px; padding: 6px 10px; color: #aaffcc; font-size: 10px;
+      font-family: 'Share Tech Mono', monospace; outline: none; transition: border-color .2s, box-shadow .2s;
+      box-sizing: border-box;
+    }
+    #search-input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb),.2); }
+    #search-input::placeholder { color: #2a4a3a; }
+    #search-badge {
+      position: absolute; right: 26px; top: 50%; transform: translateY(-50%);
+      font-size: 9px; font-family: 'Share Tech Mono', monospace;
+      padding: 2px 5px; border-radius: 2px; pointer-events: none;
+    }
+    #search-badge.type-location { background: rgba(0,180,255,.15); color: #00b4ff; border: 1px solid rgba(0,180,255,.3); }
+    #search-badge.type-keyword  { background: rgba(255,200,0,.12);  color: #ffc800; border: 1px solid rgba(255,200,0,.25); }
+    #search-badge.type-agency   { background: rgba(160,80,255,.15); color: #c060ff; border: 1px solid rgba(160,80,255,.3); }
+    #search-badge.type-loading  { background: rgba(var(--accent-rgb),.1);   color: var(--accent); border: 1px solid rgba(var(--accent-rgb),.2); animation: pulse 1s infinite; }
+    #search-clear {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: #556; font-size: 11px; cursor: pointer;
+      padding: 0 2px; line-height: 1; transition: color .15s;
+    }
+    #search-clear:hover { color: var(--accent); }
+    #sort-select {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(var(--accent-rgb),.2);
+      border-radius: 3px; padding: 6px 8px; color: #668; font-size: 9px;
+      font-family: 'Share Tech Mono', monospace; outline: none; cursor: pointer;
+    }
+    #contracts-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+    #contracts-list::-webkit-scrollbar { width: 2px; }
+    #contracts-list::-webkit-scrollbar-track { background: transparent; }
+    #contracts-list::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
+    .contract-card {
+      padding: 9px 14px; border-bottom: 1px solid rgba(var(--accent-rgb),.04);
+      cursor: pointer; transition: background .15s, border-left-color .15s;
+      border-left: 2px solid transparent; position: relative;
+      animation: data-in .3s ease both;
+    }
+    .contract-card:hover { background: rgba(var(--accent-rgb),.06); border-left-color: rgba(var(--accent-rgb),.5); }
+    .contract-card.active { background: rgba(var(--accent-rgb),.09); border-left-color: var(--accent); box-shadow: inset 2px 0 8px rgba(var(--accent-rgb),.1); }
+    .c-recipient { font-size: 10px; font-weight: 600; color: #cceedd; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .5px; }
+    .c-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+    .c-amount { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; }
+    .c-location { font-size: 9px; color: #446655; }
+    .c-agency { font-size: 9px; color: #558866; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .c-date { font-size: 9px; color: #334433; }
+    .t-mega   { color: #ff4444; text-shadow: 0 0 8px rgba(255,68,68,.6); }
+    .t-large  { color: #ff8844; text-shadow: 0 0 8px rgba(255,136,68,.5); }
+    .t-medium { color: #ffcc44; text-shadow: 0 0 8px rgba(255,204,68,.4); }
+    .t-small  { color: #44ffcc; text-shadow: 0 0 6px rgba(68,255,204,.4); }
+
+    /* ── Loading ── */
+    #loading {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; background: #000510; z-index: 30;
+    }
+    .spinner {
+      width: 60px; height: 60px; position: relative; margin-bottom: 24px;
+    }
+    .spinner::before, .spinner::after {
+      content: ''; position: absolute; border-radius: 50%;
+    }
+    .spinner::before {
+      inset: 0; border: 2px solid rgba(var(--accent-rgb),.1);
+    }
+    .spinner::after {
+      inset: 0; border: 2px solid transparent;
+      border-top-color: var(--accent); border-right-color: rgba(var(--accent-rgb),.3);
+      animation: spin .8s linear infinite;
+      box-shadow: 0 0 20px rgba(var(--accent-rgb),.4);
+    }
+    #loading p {
+      font-family: 'Orbitron', monospace; font-size: 10px; color: var(--accent);
+      letter-spacing: 4px; text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(var(--accent-rgb),.7); animation: blink 1.5s ease-in-out infinite;
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed; background: rgba(0,6,20,.97); border: 1px solid rgba(var(--accent-rgb),.45);
+      border-radius: 4px; padding: 11px 14px; z-index: 50; pointer-events: none;
+      max-width: 270px; backdrop-filter: blur(16px); display: none;
+      box-shadow: 0 0 20px rgba(var(--accent-rgb),.15), inset 0 0 20px rgba(var(--accent-rgb),.03);
+    }
+    #tooltip h3 { font-family: 'Orbitron', monospace; font-size: 9px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 0 8px rgba(var(--accent-rgb),.5); }
+    .tt-row { display: flex; gap: 8px; margin-bottom: 3px; font-size: 10px; align-items: baseline; }
+    .tt-lbl { color: #3a6a5a; min-width: 65px; flex-shrink: 0; }
+    .tt-val { color: #aaffcc; font-weight: 600; flex: 1; }
+
+    /* ── Detail Panel ── */
+    #detail-panel {
+      position: fixed; bottom: 0; left: 0; right: 320px;
+      background: rgba(0,4,16,.98); border-top: 1px solid rgba(var(--accent-rgb),.3);
+      z-index: 30; padding: 16px 24px 18px;
+      backdrop-filter: blur(20px);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(.22,.68,0,1.1);
+      box-shadow: 0 -8px 40px rgba(var(--accent-rgb),.08);
+    }
+    #detail-panel.open { transform: translateY(0); }
+    #detail-panel-header {
+      display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px;
+    }
+    #detail-title { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; color: #fff; max-width: calc(100% - 36px); line-height: 1.4; letter-spacing: 1px; }
+    #detail-type-badge {
+      font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 2px; margin-top: 5px; display: inline-block;
+    }
+    #detail-type-badge.contract { background: rgba(255,100,100,.1); color: #ff8888; border: 1px solid rgba(255,100,100,.35); box-shadow: 0 0 8px rgba(255,80,80,.15); }
+    #detail-type-badge.agency   { background: rgba(0,170,255,.1); color: #00aaff; border: 1px solid rgba(0,170,255,.35); box-shadow: 0 0 8px rgba(0,170,255,.15); }
+    #detail-close {
+      background: none; border: 1px solid rgba(255,255,255,.12); border-radius: 3px;
+      color: #445; font-size: 13px; width: 26px; height: 26px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: border-color .15s, color .15s, box-shadow .15s;
+    }
+    #detail-close:hover { border-color: #ff4444; color: #ff4444; box-shadow: 0 0 8px rgba(255,50,50,.3); }
+    #detail-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px 24px; margin-bottom: 10px;
+    }
+    .dg-field { display: flex; flex-direction: column; gap: 2px; }
+    .dg-label { font-size: 8px; color: #2a5a4a; text-transform: uppercase; letter-spacing: 1.5px; }
+    .dg-value { font-size: 11px; color: #aaccbb; font-weight: 600; }
+    .dg-value.green { color: var(--accent); text-shadow: 0 0 6px rgba(var(--accent-rgb),.4); }
+    .dg-value.blue  { color: #00aaff; text-shadow: 0 0 6px rgba(0,170,255,.4); }
+    .dg-value.amount-1b  { color: #ff4444; text-shadow: 0 0 8px rgba(255,68,68,.5); }
+    .dg-value.amount-100m{ color: #ff8844; text-shadow: 0 0 8px rgba(255,136,68,.4); }
+    .dg-value.amount-10m { color: #ffcc44; text-shadow: 0 0 8px rgba(255,204,68,.4); }
+    .dg-value.amount-low { color: #44ffcc; text-shadow: 0 0 6px rgba(68,255,204,.3); }
+    #detail-desc {
+      font-size: 10px; color: #446655; line-height: 1.6; border-top: 1px solid rgba(var(--accent-rgb),.06);
+      padding-top: 9px; margin-top: 2px;
+    }
+    #detail-agency-contracts { margin-top: 9px; border-top: 1px solid rgba(var(--accent-rgb),.06); padding-top: 9px; }
+    #detail-agency-contracts h4 { font-family: 'Orbitron', monospace; font-size: 8px; color: #336655; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+    .dac-item {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 5px 0; border-bottom: 1px solid rgba(var(--accent-rgb),.04);
+      cursor: pointer; gap: 12px; transition: background .1s;
+    }
+    .dac-item:hover { background: rgba(var(--accent-rgb),.04); }
+    .dac-item:hover .dac-name { color: var(--accent); }
+    .dac-name { font-size: 10px; color: #889a93; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dac-amt  { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+    /* ── Footer ── */
+    #footer {
+      position: absolute; bottom: 0; left: 0; right: 320px;
+      padding: 10px 20px; background: linear-gradient(to top, rgba(0,0,0,.8), transparent);
+      z-index: 10; display: flex; align-items: center; justify-content: space-between;
+    }
+    #legend { display: flex; gap: 16px; }
+    .leg { display: flex; align-items: center; gap: 5px; font-size: 9px; color: #335544; letter-spacing: 1px; }
+    .leg-dot { width: 7px; height: 7px; border-radius: 50%; }
+    #last-updated { font-size: 9px; color: #223333; }
+
+    /* ── Refresh overlay ── */
+    #refresh-overlay {
+      position: fixed; inset: 0; z-index: 60; pointer-events: none;
+      opacity: 0; transition: opacity .15s;
+    }
+    #refresh-overlay.active { opacity: 1; }
+
+    #refresh-scanline {
+      position: absolute; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, transparent 0%, var(--accent) 20%, #00ffcc 50%, var(--accent) 80%, transparent 100%);
+      box-shadow: 0 0 24px 6px rgba(var(--accent-rgb),.7), 0 0 60px 12px rgba(var(--accent-rgb),.3);
+      top: -3px; transform: translateY(-3px);
+      transition: none;
+    }
+    #refresh-scanline.sweep { transition: transform .55s cubic-bezier(.4,0,.6,1); transform: translateY(100vh); }
+
+    #refresh-flash {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, rgba(var(--accent-rgb),.08) 0%, transparent 70%);
+      animation: none;
+    }
+    @keyframes flash-in-out {
+      0%   { opacity: 0; }
+      15%  { opacity: 1; }
+      85%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    #refresh-overlay.active #refresh-flash { animation: flash-in-out .6s ease forwards; }
+
+    #refresh-label {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-family: 'Orbitron', monospace; font-size: 11px; letter-spacing: 6px;
+      color: var(--accent); text-transform: uppercase; opacity: 0;
+      text-shadow: 0 0 20px rgba(var(--accent-rgb),.9);
+      animation: none;
+    }
+    @keyframes label-pulse {
+      0%,100% { opacity: 0; transform: translate(-50%,-50%) scale(.95); }
+      30%,70% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    }
+    #refresh-overlay.active #refresh-label { animation: label-pulse .6s ease forwards; }
+
+    /* ── Error ── */
+    #error-banner {
+      position: absolute; top: 54px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,50,50,.1); border: 1px solid rgba(255,50,50,.4);
+      border-radius: 3px; padding: 7px 16px; font-size: 10px; color: #ff9999;
+      z-index: 20; display: none; white-space: nowrap;
+      box-shadow: 0 0 12px rgba(255,50,50,.2);
+    }
+
+    /* ── Token prompt ── */
+    #token-overlay {
+      position: fixed; inset: 0; z-index: 80;
+      background: rgba(0,0,0,.85); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #token-overlay.visible { display: flex; }
+    #token-prompt {
+      background: rgba(0,4,18,.98); border: 1px solid rgba(var(--accent-rgb),.35);
+      border-radius: 6px; padding: 32px 36px; z-index: 81; width: 480px; max-width: 95vw;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 0 60px rgba(var(--accent-rgb),.12), 0 0 0 1px rgba(var(--accent-rgb),.06);
+      position: relative;
+    }
+    #token-prompt::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      border-radius: 6px 6px 0 0;
+    }
+    #token-prompt .tp-logo {
+      font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 900;
+      color: var(--accent); letter-spacing: 5px; text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(var(--accent-rgb),.5);
+      margin-bottom: 6px;
+    }
+    #token-prompt h2 {
+      font-family: 'Orbitron', monospace; font-size: 16px; color: #ddeedd;
+      letter-spacing: 1px; margin-bottom: 6px; font-weight: 700;
+    }
+    #token-prompt .tp-sub {
+      font-size: 10px; color: #445a4a; margin-bottom: 22px; letter-spacing: .5px;
+    }
+    .tp-steps {
+      background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.05);
+      border-radius: 4px; padding: 14px 16px; margin-bottom: 20px;
+    }
+    .tp-step {
+      display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px;
+      font-size: 10px; color: #7a9a88; line-height: 1.6;
+    }
+    .tp-step:last-child { margin-bottom: 0; }
+    .tp-step-num {
+      min-width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(var(--accent-rgb),.12); border: 1px solid rgba(var(--accent-rgb),.3);
+      color: var(--accent); font-size: 9px; font-family: 'Orbitron', monospace;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .tp-step a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(var(--accent-rgb),.3); }
+    .tp-step a:hover { border-bottom-color: var(--accent); }
+    .tp-step strong { color: #aaccbb; }
+    .tp-note {
+      font-size: 9px; color: #334433; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tp-note::before { content: '🔒'; font-size: 10px; }
+    #token-input {
+      width: 100%; background: rgba(var(--accent-rgb),.03); border: 1px solid rgba(var(--accent-rgb),.25);
+      border-radius: 3px; padding: 10px 14px; color: #aaffcc; font-size: 11px;
+      font-family: 'Share Tech Mono', monospace; outline: none; margin-bottom: 10px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    #token-input:focus { border-color: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),.2); }
+    #token-submit {
+      width: 100%; background: rgba(var(--accent-rgb),.12); border: 1px solid rgba(var(--accent-rgb),.5);
+      border-radius: 3px; color: var(--accent); font-family: 'Orbitron', monospace;
+      font-size: 11px; padding: 12px; cursor: pointer; letter-spacing: 3px;
+      transition: background .15s, box-shadow .15s; text-transform: uppercase;
+      font-weight: 700;
+    }
+    #token-submit:hover { background: rgba(var(--accent-rgb),.22); box-shadow: 0 0 20px rgba(var(--accent-rgb),.3); }
+    #token-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Settings ── */
+    #settings-overlay {
+      position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.55);
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+      backdrop-filter: blur(2px);
+    }
+    #settings-overlay.open { opacity: 1; pointer-events: all; }
+
+    #settings-panel {
+      position: absolute; top: 0; left: 0; bottom: 0; width: 320px;
+      background: rgba(0,6,20,.97); border-right: 1px solid var(--accent-border);
+      transform: translateX(-100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 4px 0 40px rgba(0,0,0,.8);
+    }
+    #settings-overlay.open #settings-panel { transform: translateX(0); }
+
+    #settings-header {
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid rgba(var(--accent-rgb),.1);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(var(--accent-rgb),.03);
+    }
+    #settings-header h2 {
+      font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 900;
+      color: var(--accent); letter-spacing: 4px; text-transform: uppercase;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+    #settings-close {
+      background: none; border: 1px solid rgba(var(--accent-rgb),.2); border-radius: 3px;
+      color: #556; font-size: 14px; cursor: pointer; padding: 2px 7px;
+      transition: all .15s;
+    }
+    #settings-close:hover { color: var(--accent); border-color: var(--accent-border); }
+
+    #settings-body { flex: 1; overflow-y: auto; padding: 0 0 20px; }
+    #settings-body::-webkit-scrollbar { width: 3px; }
+    #settings-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.2); border-radius: 2px; }
+
+    .s-section {
+      padding: 14px 20px 0;
+    }
+    .s-section-title {
+      font-family: 'Orbitron', monospace; font-size: 8px; font-weight: 700;
+      color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
+      opacity: .7; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .s-section-title::after {
+      content: ''; flex: 1; height: 1px; background: rgba(var(--accent-rgb),.12);
+    }
+
+    .s-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; gap: 10px;
+    }
+    .s-label {
+      font-size: 10px; color: #7a9a8a; letter-spacing: .5px; flex-shrink: 0;
+    }
+    .s-value {
+      font-size: 11px; color: var(--accent); font-family: 'Share Tech Mono', monospace;
+      min-width: 40px; text-align: right;
+    }
+
+    /* Slider */
+    .s-slider-row { flex-direction: column; align-items: stretch; gap: 6px; }
+    .s-slider-top { display: flex; justify-content: space-between; align-items: center; }
+    input[type=range].s-slider {
+      width: 100%; -webkit-appearance: none; height: 3px;
+      background: rgba(var(--accent-rgb),.15); border-radius: 2px; outline: none;
+      transition: background .2s;
+    }
+    input[type=range].s-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+      box-shadow: 0 0 8px var(--accent-glow);
+      transition: transform .15s;
+    }
+    input[type=range].s-slider::-webkit-slider-thumb:hover { transform: scale(1.25); }
+    input[type=range].s-slider:focus { background: rgba(var(--accent-rgb),.25); }
+
+    /* Toggle */
+    .s-toggle {
+      position: relative; width: 36px; height: 18px; flex-shrink: 0;
+    }
+    .s-toggle input { opacity: 0; width: 0; height: 0; }
+    .s-toggle-track {
+      position: absolute; inset: 0; border-radius: 9px; cursor: pointer;
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+      transition: background .2s, border-color .2s;
+    }
+    .s-toggle-track::after {
+      content: ''; position: absolute; width: 12px; height: 12px;
+      border-radius: 50%; background: #445; top: 2px; left: 2px;
+      transition: transform .2s, background .2s;
+    }
+    .s-toggle input:checked + .s-toggle-track {
+      background: rgba(var(--accent-rgb),.2); border-color: rgba(var(--accent-rgb),.4);
+    }
+    .s-toggle input:checked + .s-toggle-track::after {
+      transform: translateX(18px); background: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    /* Select */
+    .s-select {
+      background: rgba(var(--accent-rgb),.04); border: 1px solid rgba(var(--accent-rgb),.2);
+      border-radius: 3px; color: #aaffcc; font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; padding: 5px 8px; outline: none; flex: 1;
+      transition: border-color .2s;
+    }
+    .s-select:focus { border-color: var(--accent); }
+    .s-select option { background: #000d1f; }
+
+    /* Color swatches */
+    #accent-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+    .accent-swatch {
+      width: 28px; height: 28px; border-radius: 4px; cursor: pointer;
+      border: 2px solid transparent; transition: transform .15s, border-color .15s;
+      position: relative;
+    }
+    .accent-swatch:hover { transform: scale(1.15); }
+    .accent-swatch.active { border-color: #fff; }
+    .accent-swatch.active::after {
+      content: '✓'; position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: rgba(0,0,0,.8);
+    }
+
+    .s-divider { height: 1px; background: rgba(255,255,255,.04); margin: 6px 20px 0; }
+
+    /* Reset button */
+    #settings-reset {
+      margin: 16px 20px 0;
+      width: calc(100% - 40px);
+      background: rgba(255,80,80,.06); border: 1px solid rgba(255,80,80,.25);
+      border-radius: 3px; color: #ff8888; font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; letter-spacing: 2px; padding: 8px; cursor: pointer;
+      text-transform: uppercase; transition: all .15s;
+    }
+    #settings-reset:hover { background: rgba(255,80,80,.15); box-shadow: 0 0 10px rgba(255,80,80,.2); }
+  </style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>Initializing globe...</p></div>
+<div id="cesiumContainer"></div>
+
+<!-- Token prompt overlay -->
+<div id="token-overlay">
+<div id="token-prompt">
+  <div class="tp-logo">Global Contract Tracker</div>
+  <h2>Connect Cesium Ion</h2>
+  <div class="tp-sub">A free Cesium Ion account is required to render the 3D globe.</div>
+
+  <div class="tp-steps">
+    <div class="tp-step">
+      <div class="tp-step-num">1</div>
+      <div>Visit <a href="https://ion.cesium.com/signup" target="_blank">ion.cesium.com/signup</a> and create a <strong>free account</strong> — no credit card needed.</div>
+    </div>
+    <div class="tp-step">
+      <div class="tp-step-num">2</div>
+      <div>Once logged in, go to <a href="https://ion.cesium.com/tokens" target="_blank">ion.cesium.com/tokens</a> and open <strong>Access Tokens</strong>.</div>
+    </div>
+    <div class="tp-step">
+      <div class="tp-step-num">3</div>
+      <div>Copy your <strong>Default Token</strong> (or create a new one) and paste it below.</div>
+    </div>
+  </div>
+
+  <div class="tp-note">Your token is stored only in this browser and never transmitted anywhere.</div>
+
+  <input id="token-input" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+  <button id="token-submit">⚡ CONNECT GLOBE</button>
+  <div id="token-error" style="display:none;margin-top:10px;font-size:9px;color:#ff6666;letter-spacing:1px;">
+    ⚠ Token invalid or connection failed. Check the token and try again.
+  </div>
+</div>
+</div>
+
+<div id="header">
+  <div id="header-top">
+    <h1><span class="title-long">Global Contract Tracker</span><span class="title-short">GCT</span></h1>
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div id="header-btns">
+      <button id="spin-btn" class="header-btn" onclick="toggleSpin()">⏸ SPIN</button>
+      <button id="refresh-btn" class="header-btn" onclick="loadData()">REFRESH</button>
+      <button class="header-btn" onclick="openSettings()">⚙ SETTINGS</button>
+    </div>
+  </div>
+</div>
+
+<div id="stats-bar">
+  <div class="stat-card"><div class="stat-label">Contracts</div><div class="stat-value" id="stat-count">—</div></div>
+  <div class="stat-card"><div class="stat-label">Total Value</div><div class="stat-value" id="stat-total">—</div></div>
+  <div class="stat-card"><div class="stat-label">Countries</div><div class="stat-value" id="stat-countries">—</div></div>
+  <div class="stat-card"><div class="stat-label">Largest Award</div><div class="stat-value" id="stat-max">—</div></div>
+</div>
+
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h2>Recent Awards</h2>
+    <div id="agency-filter-row">
+      <select id="agency-filter-select">
+        <option value="all">All Agencies</option>
+        <optgroup label="─── Defense ───">
+          <option value="dod" selected>Department of Defense</option>
+          <option value="army">Army</option>
+          <option value="navy">Navy</option>
+          <option value="af">Air Force / Space Force</option>
+          <option value="darpa">DARPA</option>
+          <option value="mda">Missile Defense Agency</option>
+          <option value="dla">Defense Logistics Agency</option>
+          <option value="socom">Special Operations Command</option>
+        </optgroup>
+        <optgroup label="─── Homeland Security ───">
+          <option value="dhs">Dept. of Homeland Security</option>
+          <option value="cbp_ice">CBP + ICE</option>
+          <option value="cbp">Customs and Border Protection</option>
+          <option value="ice">Immigration and Customs Enforcement</option>
+          <option value="fema">FEMA</option>
+          <option value="uscg">U.S. Coast Guard</option>
+        </optgroup>
+        <optgroup label="─── Civilian ───">
+          <option value="doe">Dept. of Energy</option>
+          <option value="nasa">NASA</option>
+          <option value="hhs">Health and Human Services</option>
+          <option value="va">Dept. of Veterans Affairs</option>
+          <option value="dot">Dept. of Transportation</option>
+          <option value="gsa">General Services Administration</option>
+          <option value="doj">Dept. of Justice</option>
+          <option value="treasury">Dept. of the Treasury</option>
+          <option value="state">Dept. of State</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="filter-row">
+      <div id="search-wrap">
+        <input id="search-input" type="text" placeholder="Country, state, company, keyword…" />
+        <span id="search-badge" style="display:none"></span>
+        <button id="search-clear" onclick="clearSearch()" style="display:none">✕</button>
+      </div>
+      <select id="sort-select">
+        <option value="amount">$ Amount</option>
+        <option value="date">Date</option>
+        <option value="name">Name</option>
+      </select>
+    </div>
+  </div>
+  <div id="contracts-list"></div>
+</div>
+
+<div id="tooltip">
+  <h3 id="tt-name"></h3>
+  <div class="tt-row"><span class="tt-lbl">Amount</span><span class="tt-val" id="tt-amount"></span></div>
+  <div class="tt-row"><span class="tt-lbl">Agency</span><span class="tt-val" id="tt-agency"></span></div>
+  <div class="tt-row"><span class="tt-lbl">Location</span><span class="tt-val" id="tt-location"></span></div>
+  <div class="tt-row"><span class="tt-lbl">Modified</span><span class="tt-val" id="tt-date"></span></div>
+  <div class="tt-row"><span class="tt-lbl">Description</span><span class="tt-val" id="tt-desc"></span></div>
+</div>
+
+<div id="detail-panel">
+  <div id="detail-panel-header">
+    <div>
+      <div id="detail-title"></div>
+      <span id="detail-type-badge"></span>
+    </div>
+    <button id="detail-close">✕</button>
+  </div>
+  <div id="detail-grid"></div>
+  <div id="detail-desc"></div>
+  <div id="detail-agency-contracts" style="display:none">
+    <h4>Contracts from this agency</h4>
+    <div id="dac-list"></div>
+  </div>
+</div>
+
+<div id="refresh-overlay">
+  <div id="refresh-flash"></div>
+  <div id="refresh-scanline"></div>
+  <div id="refresh-label">Refreshing Data</div>
+</div>
+
+<!-- Settings overlay + panel -->
+<div id="settings-overlay" onclick="closeSettingsIfOutside(event)">
+  <div id="settings-panel">
+    <div id="settings-header">
+      <h2>⚙ Configuration</h2>
+      <button id="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div id="settings-body">
+
+      <!-- DATA -->
+      <div class="s-section">
+        <div class="s-section-title">Data</div>
+
+        <div class="s-row s-slider-row">
+          <div class="s-slider-top">
+            <span class="s-label">Contracts to load</span>
+            <span class="s-value" id="sv-pages">1,000</span>
+          </div>
+          <input type="range" class="s-slider" id="si-pages" min="1" max="20" step="1" value="10"
+            oninput="updateSlider('pages', this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+            <span>100</span><span>500</span><span>1,000</span><span>1,500</span><span>2,000</span>
+          </div>
+        </div>
+
+        <div class="s-row s-slider-row">
+          <div class="s-slider-top">
+            <span class="s-label">Date range</span>
+            <span class="s-value" id="sv-days">180 days</span>
+          </div>
+          <input type="range" class="s-slider" id="si-days" min="0" max="4" step="1" value="3"
+            oninput="updateSlider('days', this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+            <span>30d</span><span>60d</span><span>90d</span><span>180d</span><span>1yr</span>
+          </div>
+        </div>
+
+        <div class="s-row">
+          <span class="s-label">Auto-refresh</span>
+          <select class="s-select" id="si-refresh" onchange="updateSetting('refresh', this.value)" style="max-width:120px">
+            <option value="0">Off</option>
+            <option value="30">Every 30s</option>
+            <option value="60" selected>Every 1m</option>
+            <option value="300">Every 5m</option>
+            <option value="600">Every 10m</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="s-divider"></div>
+
+      <!-- GLOBE -->
+      <div class="s-section" style="margin-top:14px">
+        <div class="s-section-title">Globe</div>
+
+        <div class="s-row s-slider-row">
+          <div class="s-slider-top">
+            <span class="s-label">Rotation speed</span>
+            <span class="s-value" id="sv-rotation">Normal</span>
+          </div>
+          <input type="range" class="s-slider" id="si-rotation" min="0" max="4" step="1" value="2"
+            oninput="updateSlider('rotation', this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+            <span>Off</span><span>Slow</span><span>Normal</span><span>Fast</span><span>Max</span>
+          </div>
+        </div>
+
+        <div class="s-row">
+          <span class="s-label">Show agency hubs</span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-hubs" checked onchange="updateSetting('hubs', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="s-row">
+          <span class="s-label">Show arcs</span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-arcs" checked onchange="updateSetting('arcs', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="s-row s-slider-row">
+          <div class="s-slider-top">
+            <span class="s-label">Arc opacity</span>
+            <span class="s-value" id="sv-arcOpacity">35%</span>
+          </div>
+          <input type="range" class="s-slider" id="si-arcOpacity" min="5" max="90" step="5" value="35"
+            oninput="updateSlider('arcOpacity', this.value)">
+        </div>
+      </div>
+
+      <div class="s-divider"></div>
+
+      <!-- THEME -->
+      <div class="s-section" style="margin-top:14px">
+        <div class="s-section-title">Theme</div>
+
+        <div class="s-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <span class="s-label">Accent color</span>
+          <div id="accent-swatches">
+            <div class="accent-swatch active" data-color="#00ff88" style="background:#00ff88" onclick="setAccent('#00ff88',this)"></div>
+            <div class="accent-swatch" data-color="#00d4ff" style="background:#00d4ff" onclick="setAccent('#00d4ff',this)"></div>
+            <div class="accent-swatch" data-color="#4488ff" style="background:#4488ff" onclick="setAccent('#4488ff',this)"></div>
+            <div class="accent-swatch" data-color="#ff8800" style="background:#ff8800" onclick="setAccent('#ff8800',this)"></div>
+            <div class="accent-swatch" data-color="#cc44ff" style="background:#cc44ff" onclick="setAccent('#cc44ff',this)"></div>
+            <div class="accent-swatch" data-color="#ff4466" style="background:#ff4466" onclick="setAccent('#ff4466',this)"></div>
+          </div>
+        </div>
+
+        <div class="s-row" style="margin-top:8px">
+          <span class="s-label">Scanlines</span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-scanlines" checked onchange="updateSetting('scanlines', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="s-divider"></div>
+
+      <!-- DISPLAY -->
+      <div class="s-section" style="margin-top:14px">
+        <div class="s-section-title">Display</div>
+        <div class="s-row">
+          <span class="s-label">Sort default</span>
+          <select class="s-select" id="si-sort" onchange="updateSetting('sort', this.value)" style="max-width:120px">
+            <option value="amount" selected>$ Amount</option>
+            <option value="date">Date</option>
+            <option value="name">Name</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="settings-reset" onclick="resetSettings()">⟳ Reset to Defaults</button>
+      <button id="settings-token-btn" onclick="closeSettings();showTokenPrompt();" style="margin:8px 20px 0;width:calc(100% - 40px);background:rgba(0,150,255,.06);border:1px solid rgba(0,150,255,.2);border-radius:3px;color:#4499ff;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:8px;cursor:pointer;text-transform:uppercase;transition:all .15s;">
+        🔑 Change Cesium Ion Token
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<div id="error-banner"></div>
+
+<div id="footer">
+  <div id="legend">
+    <div class="leg"><div class="leg-dot" style="background:#ff4444"></div>$1B+</div>
+    <div class="leg"><div class="leg-dot" style="background:#ff8844"></div>$100M+</div>
+    <div class="leg"><div class="leg-dot" style="background:#ffcc44"></div>$10M+</div>
+    <div class="leg"><div class="leg-dot" style="background:#44ffcc"></div>&lt;$10M</div>
+    <div class="leg"><div class="leg-dot" style="background:#00aaff"></div>Agency</div>
+  </div>
+  <div id="last-updated">Last updated: —</div>
+</div>
+
+<script>
+// ─── Config ──────────────────────────────────────────────────────────────────
+window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+
+// ─── Coordinate tables ────────────────────────────────────────────────────────
+const US_STATES = {
+  AL:[32.78,-86.83],AK:[64.45,-153.49],AZ:[34.27,-111.66],AR:[34.89,-92.44],
+  CA:[37.18,-119.47],CO:[38.99,-105.55],CT:[41.62,-72.73],DE:[38.99,-75.51],
+  FL:[28.63,-82.45],GA:[32.64,-83.44],HI:[20.29,-156.37],ID:[44.35,-114.61],
+  IL:[40.04,-89.20],IN:[39.89,-86.28],IA:[42.08,-93.50],KS:[38.49,-98.38],
+  KY:[37.53,-85.30],LA:[31.07,-91.99],ME:[45.37,-69.24],MD:[39.05,-76.79],
+  MA:[42.26,-71.81],MI:[44.35,-85.41],MN:[46.28,-94.31],MS:[32.74,-89.67],
+  MO:[38.36,-92.46],MT:[47.05,-109.63],NE:[41.54,-99.80],NV:[39.33,-116.63],
+  NH:[43.68,-71.58],NJ:[40.19,-74.67],NM:[34.41,-106.11],NY:[42.95,-75.53],
+  NC:[35.56,-79.39],ND:[47.45,-100.47],OH:[40.29,-82.79],OK:[35.59,-97.49],
+  OR:[43.93,-120.56],PA:[40.88,-77.80],RI:[41.68,-71.56],SC:[33.92,-80.90],
+  SD:[44.44,-100.23],TN:[35.86,-86.35],TX:[31.48,-99.33],UT:[39.32,-111.09],
+  VT:[44.07,-72.67],VA:[37.52,-78.85],WA:[47.38,-120.45],WV:[38.64,-80.62],
+  WI:[44.62,-89.99],WY:[42.99,-107.55],DC:[38.91,-77.04],PR:[18.22,-66.59],
+  GU:[13.44,144.79],VI:[18.34,-64.90],
+};
+
+const COUNTRY_COORDS = {
+  USA:[37.09,-95.71],GBR:[55.38,-3.44],DEU:[51.17,10.45],FRA:[46.23,2.21],
+  ITA:[41.87,12.57],ESP:[40.46,-3.75],JPN:[36.20,138.25],KOR:[35.91,127.77],
+  AUS:[-25.27,133.78],CAN:[56.13,-106.35],MEX:[23.63,-102.55],BRA:[-14.24,-51.93],
+  IND:[20.59,78.96],CHN:[35.86,104.20],RUS:[61.52,105.32],SAU:[23.89,45.08],
+  ISR:[31.05,34.85],ARE:[23.42,53.85],TUR:[38.96,35.24],POL:[51.92,19.15],
+  NLD:[52.13,5.29],BEL:[50.50,4.47],SWE:[60.13,18.64],NOR:[60.47,8.47],
+  DNK:[56.26,9.50],CHE:[46.82,8.23],AUT:[47.52,14.55],PRT:[39.40,-8.22],
+  GRC:[39.07,21.82],NZL:[-40.90,174.89],ZAF:[-30.56,22.94],EGY:[26.82,30.80],
+  NGA:[9.08,8.68],THA:[15.87,100.99],PHL:[12.88,121.77],IDN:[-0.79,113.92],
+  MYS:[4.21,101.98],SGP:[1.35,103.82],PAK:[30.38,69.35],IRQ:[33.22,43.68],
+  COL:[4.57,-74.30],ARG:[-38.42,-63.62],CHL:[-35.68,-71.54],UKR:[48.38,31.17],
+  JOR:[30.59,36.24],OMN:[21.47,55.97],TWN:[23.70,120.96],HKG:[22.32,114.17],
+};
+
+const AGENCY_RULES = [
+  ['darpa',38.8785,-77.1092,'DARPA — Arlington, VA'],
+  ['missile defense',34.6787,-86.6801,'Missile Defense Agency'],
+  ['special operations command',27.8498,-82.5209,'SOCOM — MacDill AFB'],
+  ['socom',27.8498,-82.5209,'SOCOM — MacDill AFB'],
+  ['air force materiel',39.8261,-84.0508,'AFMC — Wright-Patterson AFB'],
+  ['air force life cycle',39.8261,-84.0508,'AFLCMC — Wright-Patterson AFB'],
+  ['air force research',39.8261,-84.0508,'AFRL — Wright-Patterson AFB'],
+  ['army materiel',34.6787,-86.6801,'Army Materiel Command'],
+  ['army futures',34.6787,-86.6801,'Army Futures Command'],
+  ['army corps',38.9072,-77.0369,'Army Corps of Engineers'],
+  ['army research',38.9978,-77.1081,'Army Research Lab'],
+  ['naval air',38.2851,-76.4122,'NAVAIR — Patuxent River'],
+  ['navair',38.2851,-76.4122,'NAVAIR — Patuxent River'],
+  ['naval sea',38.8612,-77.0172,'NAVSEA — Washington Navy Yard'],
+  ['navsea',38.8612,-77.0172,'NAVSEA — Washington Navy Yard'],
+  ['space force',38.8719,-77.0563,'Space Force'],
+  ['pacific air',21.4544,-157.9763,'PACAF — Hickam AFB'],
+  ['central command',27.8498,-82.5209,'CENTCOM — MacDill AFB'],
+  ['cyber command',39.1137,-76.7723,'CYBERCOM — Ft. Meade'],
+  ['nsa',39.1137,-76.7723,'NSA — Ft. Meade'],
+  ['national security agency',39.1137,-76.7723,'NSA — Ft. Meade'],
+  ['walter reed',38.9833,-77.1028,'Walter Reed NMMC'],
+  ['defense logistics',38.7218,-77.1624,'Defense Logistics Agency — Ft. Belvoir'],
+  ['defense intelligence',38.8463,-77.0132,'DIA — Anacostia-Bolling'],
+  ['army',38.8719,-77.0563,'Department of the Army'],
+  ['navy',38.8719,-77.0563,'Department of the Navy'],
+  ['air force',38.8719,-77.0563,'Department of the Air Force'],
+  ['marine corps',38.8719,-77.0563,'Marine Corps'],
+  ['coast guard',38.8529,-76.9996,'U.S. Coast Guard HQ — St. Elizabeths'],
+  ['defense',38.8719,-77.0563,'Department of Defense'],
+  ['johnson space',29.5502,-95.0971,'NASA JSC — Houston, TX'],
+  ['kennedy space',28.5729,-80.6490,'NASA KSC — Cape Canaveral'],
+  ['marshall space',34.7298,-86.5858,'NASA MSFC — Huntsville, AL'],
+  ['goddard',38.9967,-76.8481,'NASA Goddard — Greenbelt, MD'],
+  ['jet propulsion',34.2012,-118.1712,'NASA JPL — Pasadena, CA'],
+  ['langley research',37.0977,-76.3881,'NASA Langley — Hampton, VA'],
+  ['glenn research',41.4203,-81.8636,'NASA Glenn — Cleveland, OH'],
+  ['stennis',30.3633,-89.6001,'NASA Stennis — MS'],
+  ['ames research',37.4057,-122.0639,'NASA Ames — Moffett Field, CA'],
+  ['national aeronautics',38.8829,-77.0163,'NASA HQ — Washington, DC'],
+  ['aeronautics',38.8829,-77.0163,'NASA HQ — Washington, DC'],
+  ['nasa',38.8829,-77.0163,'NASA HQ — Washington, DC'],
+  ['oak ridge',35.9312,-84.3103,'DOE — Oak Ridge, TN'],
+  ['savannah river',33.3565,-81.7026,'DOE — Savannah River, SC'],
+  ['los alamos',35.8801,-106.3031,'DOE — Los Alamos, NM'],
+  ['sandia',35.0494,-106.5442,'DOE — Sandia, NM'],
+  ['hanford',46.5503,-119.4888,'DOE — Hanford, WA'],
+  ['idaho national',43.4917,-112.0358,'DOE — Idaho National Lab'],
+  ['argonne',41.7185,-87.9792,'DOE — Argonne, IL'],
+  ['brookhaven',40.8682,-72.8748,'DOE — Brookhaven, NY'],
+  ['lawrence livermore',37.6876,-121.7058,'DOE — Lawrence Livermore, CA'],
+  ['pacific northwest national',46.3439,-119.2751,'DOE — PNNL, WA'],
+  ['energy',38.8865,-77.0251,'Dept. of Energy — Washington, DC'],
+  ['noaa',39.0036,-76.9469,'NOAA — Silver Spring, MD'],
+  ['national oceanic',39.0036,-76.9469,'NOAA — Silver Spring, MD'],
+  ['oceanic and atmospheric',39.0036,-76.9469,'NOAA — Silver Spring, MD'],
+  ['patent and trademark',38.8012,-77.0638,'USPTO — Alexandria, VA'],
+  ['standards and technology',39.1395,-77.2193,'NIST — Gaithersburg, MD'],
+  ['federal aviation administration',38.8869,-77.0231,'FAA HQ — Washington, DC'],
+  ['aviation administration',38.8869,-77.0231,'FAA HQ — Washington, DC'],
+  ['federal highway',38.8898,-77.0095,'FHWA'],
+  ['transportation',38.8898,-77.0095,'Dept. of Transportation'],
+  ['forest service',38.8871,-77.0294,'USDA Forest Service'],
+  ['agricultural research',38.9936,-76.8271,'USDA ARS — Beltsville, MD'],
+  ['agriculture',38.8871,-77.0294,'Dept. of Agriculture'],
+  ['farm',38.8871,-77.0294,'USDA Farm Service'],
+  ['rural',38.8871,-77.0294,'USDA Rural Development'],
+  ['food safety',38.8871,-77.0294,'USDA FSIS'],
+  ['animal and plant',38.8871,-77.0294,'USDA APHIS'],
+  ['veterans',38.9008,-77.0352,'Dept. of Veterans Affairs — Washington, DC'],
+  ['homeland security',38.8529,-76.9996,'Dept. of Homeland Security — St. Elizabeths'],
+  ['customs and border',38.8938,-77.0310,'CBP HQ — Washington, DC'],
+  ['immigration and customs',38.8840,-77.0274,'ICE HQ — Washington, DC'],
+  ['fema',38.8145,-77.0490,'FEMA — Washington, DC'],
+  ['national institutes',39.0001,-77.1027,'NIH — Bethesda, MD'],
+  ['nih',39.0001,-77.1027,'NIH — Bethesda, MD'],
+  ['centers for disease',33.7993,-84.3244,'CDC — Atlanta, GA'],
+  ['cdc',33.7993,-84.3244,'CDC — Atlanta, GA'],
+  ['food and drug',38.9959,-77.1013,'FDA — Silver Spring, MD'],
+  ['medicare and medicaid',39.3169,-76.7646,'CMS — Baltimore, MD'],
+  ['medicaid',39.3169,-76.7646,'CMS — Baltimore, MD'],
+  ['children and families',38.8859,-77.0164,'ACF — Washington, DC'],
+  ['preparedness and response',38.8866,-77.0144,'ASPR — Washington, DC'],
+  ['health and human',38.8919,-77.0101,'HHS — Washington, DC'],
+  ['marshals service',38.8625,-77.0508,'U.S. Marshals Service — Arlington, VA'],
+  ['marshals',38.8625,-77.0508,'U.S. Marshals Service — Arlington, VA'],
+  ['justice',38.8933,-77.0255,'Dept. of Justice — Washington, DC'],
+  ['dea',38.9603,-77.2811,'DEA — Arlington, VA'],
+  ['drug enforcement',38.9603,-77.2811,'DEA — Arlington, VA'],
+  ['commerce',38.8966,-77.0262,'Dept. of Commerce'],
+  ['treasury',38.8979,-77.0368,'Dept. of Treasury'],
+  ['labor',38.8858,-77.0101,'Dept. of Labor'],
+  ['interior',38.8933,-77.0431,'Dept. of Interior'],
+  ['indian affairs',38.9072,-77.0369,'Bureau of Indian Affairs'],
+  ['land management',38.9072,-77.0369,'Bureau of Land Management'],
+  ['education',38.8847,-77.0047,'Dept. of Education'],
+  ['housing',38.8989,-77.0141,'HUD'],
+  ['environmental protection agency',38.8933,-77.0294,'EPA — Washington, DC'],
+  ['environmental protection',38.8933,-77.0294,'EPA — Washington, DC'],
+  [' epa ',38.8933,-77.0294,'EPA — Washington, DC'],
+  ['federal acquisition',38.8963,-77.0421,'GSA — Federal Acquisition Service'],
+  ['general services',38.8963,-77.0421,'GSA — Washington, DC'],
+  ['executive office',38.8977,-77.0366,'Executive Office of the President'],
+  ['social security',39.3113,-76.7258,'SSA — Woodlawn, MD'],
+  ['nuclear regulatory',38.9991,-77.2008,'NRC — Rockville, MD'],
+  ['small business',38.8947,-77.0089,'SBA'],
+  ['national science',38.8014,-77.0768,'NSF — Alexandria, VA'],
+  ['state',38.8944,-77.0486,'Dept. of State'],
+];
+
+function getAgencyInfo(name) {
+  if (!name) return { lat: 38.8977, lng: -77.0366, label: 'Federal Government' };
+  const lower = ' ' + name.toLowerCase() + ' ';
+  for (const [kw, lat, lng, label] of AGENCY_RULES) {
+    if (lower.includes(kw)) return { lat, lng, label };
+  }
+  return { lat: 38.8977, lng: -77.0366, label: name };
+}
+
+// ─── Utility ─────────────────────────────────────────────────────────────────
+function fmt$(n) {
+  if (!n || isNaN(n)) return '$0';
+  const v = Math.abs(n);
+  if (v >= 1e12) return `$${(n/1e12).toFixed(2)}T`;
+  if (v >= 1e9)  return `$${(n/1e9).toFixed(1)}B`;
+  if (v >= 1e6)  return `$${(n/1e6).toFixed(1)}M`;
+  if (v >= 1e3)  return `$${(n/1e3).toFixed(0)}K`;
+  return `$${Math.round(n).toLocaleString()}`;
+}
+function tier(n) {
+  if (n >= 1e9) return 'mega'; if (n >= 1e8) return 'large';
+  if (n >= 1e7) return 'medium'; return 'small';
+}
+function amtColor(n) {
+  if (n >= 1e9) return '#ff4444'; if (n >= 1e8) return '#ff8844';
+  if (n >= 1e7) return '#ffcc44'; return '#44ffcc';
+}
+function ptSize(n) {
+  if (n >= 1e9) return 14; if (n >= 1e8) return 10;
+  if (n >= 1e7) return 8;  if (n >= 1e6) return 6; return 4;
+}
+function fmtDate(s) { return s ? s.slice(0, 10) : '—'; }
+function getCoords(c) {
+  const st = c['Place of Performance State Code'];
+  const cc = c['Place of Performance Country Code'];
+  if (st && US_STATES[st]) return US_STATES[st];
+  if (cc && COUNTRY_COORDS[cc]) return COUNTRY_COORDS[cc];
+  return [38.91, -77.04];
+}
+
+// ─── Build arc as geodesic curve with altitude parabola ──────────────────────
+function buildArcPositions(sLng, sLat, eLng, eLat) {
+  try {
+    const geo = new Cesium.EllipsoidGeodesic(
+      Cesium.Cartographic.fromDegrees(sLng, sLat),
+      Cesium.Cartographic.fromDegrees(eLng, eLat)
+    );
+    const dist = geo.surfaceDistance;
+    const maxAlt = Math.max(dist * 0.18, 80000);
+    const pts = [];
+    const N = 60;
+    const scratch = new Cesium.Cartographic();
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const c = geo.interpolateUsingFraction(t, scratch);
+      const alt = maxAlt * Math.sin(t * Math.PI);
+      pts.push(Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, alt));
+    }
+    return pts;
+  } catch (_) { return []; }
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+const DAY_PRESETS  = [30, 60, 90, 180, 365];
+const ROT_PRESETS  = [0, 0.00003, 0.00008, 0.00018, 0.00035];
+const ROT_LABELS   = ['Off','Slow','Normal','Fast','Max'];
+
+const DEFAULT_SETTINGS = {
+  pages: 10, daysIdx: 3, refreshSec: 60, rotIdx: 2,
+  hubs: true, arcs: true, arcOpacity: 35, scanlines: true,
+  accent: '#00ff88',
+  sort: 'amount',
+};
+let CFG = { ...DEFAULT_SETTINGS };
+let refreshTimer = null;
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('contractviewer_settings') || '{}');
+    CFG = { ...DEFAULT_SETTINGS, ...saved };
+  } catch(_) { CFG = { ...DEFAULT_SETTINGS }; }
+  applyAllSettings();
+}
+
+function saveSettings() {
+  localStorage.setItem('contractviewer_settings', JSON.stringify(CFG));
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return `${r}, ${g}, ${b}`;
+}
+
+function applyAccentVars(hex) {
+  const r = document.documentElement;
+  r.style.setProperty('--accent', hex);
+  r.style.setProperty('--accent-rgb', hexToRgb(hex));
+}
+
+function applyAllSettings() {
+  applyAccentVars(CFG.accent);
+
+  // Scanlines
+  document.body.style.setProperty('--scanlines', CFG.scanlines ? '1' : '0');
+  document.querySelector('body')._scanlines = CFG.scanlines;
+  // Toggle scanline pseudo-element via a class
+  document.body.classList.toggle('no-scanlines', !CFG.scanlines);
+
+  // Sort
+  sortMode = CFG.sort;
+  const ss = document.getElementById('sort-select');
+  if (ss) ss.value = CFG.sort;
+
+  // Refresh timer
+  clearInterval(refreshTimer);
+  if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
+
+  // Sync UI controls
+  syncSettingsUI();
+}
+
+function syncSettingsUI() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+  set('si-pages', CFG.pages);
+  set('si-days', CFG.daysIdx);
+  set('si-refresh', CFG.refreshSec);
+  set('si-rotation', CFG.rotIdx);
+  setCheck('si-hubs', CFG.hubs);
+  setCheck('si-arcs', CFG.arcs);
+  set('si-arcOpacity', CFG.arcOpacity);
+  setCheck('si-scanlines', CFG.scanlines);
+  set('si-sort', CFG.sort);
+  // Display values
+  updateDisplayValues();
+  // Accent swatches
+  document.querySelectorAll('.accent-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === CFG.accent));
+}
+
+function updateDisplayValues() {
+  const el = id => document.getElementById(id);
+  if (el('sv-pages'))      el('sv-pages').textContent      = (CFG.pages * 100).toLocaleString();
+  if (el('sv-days'))       el('sv-days').textContent       = DAY_PRESETS[CFG.daysIdx] + ' days';
+  if (el('sv-rotation'))   el('sv-rotation').textContent   = ROT_LABELS[CFG.rotIdx];
+  if (el('sv-arcOpacity')) el('sv-arcOpacity').textContent = CFG.arcOpacity + '%';
+}
+
+function updateSlider(key, rawVal) {
+  const v = parseInt(rawVal);
+  if (key === 'pages')      { CFG.pages = v;      }
+  if (key === 'days')       { CFG.daysIdx = v;    }
+  if (key === 'rotation')   { CFG.rotIdx = v;     }
+  if (key === 'arcOpacity') { CFG.arcOpacity = v; }
+  updateDisplayValues();
+  saveSettings();
+  // Live-apply non-fetch settings immediately
+  if (key === 'rotation' || key === 'arcOpacity') applyLiveSettings();
+}
+
+function updateSetting(key, val) {
+  if (key === 'refresh') {
+    CFG.refreshSec = parseInt(val);
+    clearInterval(refreshTimer);
+    if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
+  }
+  if (key === 'hubs')      { CFG.hubs = !!val;      if (filtered.length) renderGlobe(filtered); }
+  if (key === 'arcs')      { CFG.arcs = !!val;      if (filtered.length) renderGlobe(filtered); }
+  if (key === 'scanlines') { CFG.scanlines = !!val;  document.body.classList.toggle('no-scanlines', !val); }
+  if (key === 'sort')      { CFG.sort = val;         sortMode = val; applyFilter(); }
+  saveSettings();
+}
+
+function applyLiveSettings() {
+  // arc opacity re-renders globe live
+  if (filtered.length) renderGlobe(filtered);
+}
+
+function setAccent(hex, el) {
+  CFG.accent = hex;
+  document.querySelectorAll('.accent-swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  applyAccentVars(hex);
+  saveSettings();
+}
+
+function openSettings()  { document.getElementById('settings-overlay').classList.add('open'); syncSettingsUI(); }
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
+function closeSettingsIfOutside(e) { if (e.target === document.getElementById('settings-overlay')) closeSettings(); }
+
+function resetSettings() {
+  CFG = { ...DEFAULT_SETTINGS };
+  saveSettings();
+  applyAllSettings();
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let viewer = null;
+let pointCollection = null;
+let polylineCollection = null;
+let allContracts = [];
+let filtered = [];
+let activeId = null;
+let query = '';
+let sortMode = 'amount';
+let autoRotate = true;
+let spinLocked = false; // true = user explicitly paused
+
+function toggleSpin() {
+  spinLocked = !spinLocked;
+  autoRotate = !spinLocked;
+  const btn = document.getElementById('spin-btn');
+  btn.textContent = spinLocked ? '▶ SPIN' : '⏸ SPIN';
+  btn.classList.toggle('paused', spinLocked);
+}
+let lastInteraction = 0;
+// Map from contract _id → point primitive index (for click identification)
+const idToData = new Map();
+
+// ─── Tooltip ─────────────────────────────────────────────────────────────────
+const ttEl = document.getElementById('tooltip');
+function showTooltip(d) {
+  document.getElementById('tt-name').textContent = d.recipient;
+  document.getElementById('tt-amount').textContent = fmt$(d.amount);
+  document.getElementById('tt-amount').className = `tt-val t-${tier(d.amount)}`;
+  document.getElementById('tt-agency').textContent = d.agency;
+  document.getElementById('tt-location').textContent = d.loc;
+  document.getElementById('tt-date').textContent = d.date;
+  document.getElementById('tt-desc').textContent = d.desc;
+  ttEl.style.display = 'block';
+}
+function hideTooltip() { ttEl.style.display = 'none'; }
+document.addEventListener('mousemove', e => {
+  let x = e.clientX + 18, y = e.clientY - 16;
+  if (x + 280 > window.innerWidth - 320) x = e.clientX - 292;
+  if (y + 220 > window.innerHeight - 30) y = window.innerHeight - 250;
+  ttEl.style.left = x + 'px'; ttEl.style.top = y + 'px';
+});
+
+// ─── Cesium init ─────────────────────────────────────────────────────────────
+async function initCesium(token) {
+  Cesium.Ion.defaultAccessToken = token;
+
+  viewer = new Cesium.Viewer('cesiumContainer', {
+    terrain: Cesium.Terrain.fromWorldTerrain(),
+    timeline: false,
+    animation: false,
+    baseLayerPicker: false,
+    geocoder: false,
+    homeButton: false,
+    sceneModePicker: false,
+    navigationHelpButton: false,
+    infoBox: false,
+    selectionIndicator: false,
+    fullscreenButton: false,
+  });
+
+  // Nice dark space background
+  viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#000005');
+  viewer.scene.skyBox.show = true;
+  viewer.scene.sun.show = true;
+  viewer.scene.moon.show = false;
+  viewer.scene.skyAtmosphere.show = true;
+  viewer.scene.fog.enabled = false;
+  viewer.scene.globe.enableLighting = true;
+
+  // Initial view — look at Earth from space
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(-95, 35, 18000000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+  });
+
+  // Primitives for dots and arcs
+  pointCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+  polylineCollection = viewer.scene.primitives.add(new Cesium.PolylineCollection());
+
+  // Auto-rotation
+  viewer.scene.postUpdate.addEventListener(() => {
+    if (autoRotate) {
+      const h = viewer.camera.positionCartographic.height;
+      const spd = ROT_PRESETS[CFG.rotIdx] || 0;
+      if (h > 800000 && spd > 0) viewer.scene.camera.rotateRight(spd);
+    }
+  });
+
+  // Pause rotation while dragging; resume 3s after mouse is released
+  let isDragging = false;
+  viewer.scene.canvas.addEventListener('mousedown', () => {
+    isDragging = true;
+    autoRotate = false;
+    lastInteraction = Date.now();
+  });
+  viewer.scene.canvas.addEventListener('mousemove', () => {
+    if (isDragging) lastInteraction = Date.now();
+  });
+  viewer.scene.canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+    lastInteraction = Date.now();
+  });
+  setInterval(() => {
+    if (!autoRotate && !isDragging && !spinLocked && Date.now() - lastInteraction > 3000) autoRotate = true;
+  }, 500);
+
+  // Hover
+  const evtHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  evtHandler.setInputAction(m => {
+    const p = viewer.scene.pick(m.endPosition);
+    if (Cesium.defined(p) && p.id && p.id._cdata) showTooltip(p.id._cdata);
+    else hideTooltip();
+  }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+  // Click
+  evtHandler.setInputAction(m => {
+    const p = viewer.scene.pick(m.position);
+    if (Cesium.defined(p) && p.id && p.id._cdata) {
+      const d = p.id._cdata;
+      showDetail(d);
+      if (d.contractId) focusContract(d.contractId);
+      autoRotate = false; lastInteraction = Date.now();
+    } else {
+      closeDetail();
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+}
+
+// ─── Render globe ─────────────────────────────────────────────────────────────
+function renderGlobe(contracts) {
+  if (!viewer) return;
+
+  // Clear previous points and arcs
+  pointCollection.removeAll();
+  polylineCollection.removeAll();
+
+  // Spread overlapping contract dots
+  const pts = contracts.map(c => {
+    const [lat, lng] = getCoords(c);
+    return { lat, lng, c };
+  });
+  const SPREAD = 0.55;
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const dLat = pts[j].lat - pts[i].lat, dLng = pts[j].lng - pts[i].lng;
+      const dist = Math.sqrt(dLat*dLat + dLng*dLng);
+      if (dist < SPREAD && dist > 0.0001) {
+        const push = (SPREAD - dist) / 2;
+        const nx = dLat/dist, ny = dLng/dist;
+        pts[i].lat -= nx*push*0.5; pts[i].lng -= ny*push*0.5;
+        pts[j].lat += nx*push*0.5; pts[j].lng += ny*push*0.5;
+      } else if (dist <= 0.0001) {
+        const a = (j / pts.length) * 2 * Math.PI;
+        pts[j].lat += Math.cos(a)*SPREAD*0.4; pts[j].lng += Math.sin(a)*SPREAD*0.4;
+      }
+    }
+  }
+
+  // Unique agency hubs at their actual real-world coordinates
+  const agencyMap = new Map();
+  contracts.forEach(c => {
+    const name = c['Awarding Sub Agency'] || c['Awarding Agency'] || '';
+    const info = getAgencyInfo(name);
+    if (!agencyMap.has(info.label)) agencyMap.set(info.label, { lat: info.lat, lng: info.lng, label: info.label });
+  });
+  const agencyHubs = [...agencyMap.values()];
+
+  // Contract dots
+  pts.forEach(({ lat, lng, c }) => {
+    const amt = c._amt;
+    const loc = [c['Place of Performance City Name'], c['Place of Performance State Code'] || c['Place of Performance Country Code']].filter(Boolean).join(', ') || '—';
+    const cdata = {
+      contractId: c._id,
+      recipient: c['Recipient Name'] || 'Unknown',
+      amount: amt,
+      agency: c['Awarding Sub Agency'] || c['Awarding Agency'] || '—',
+      loc,
+      date: fmtDate(c['Last Modified Date']),
+      desc: (c['Description'] || '').slice(0, 90) + ((c['Description'] || '').length > 90 ? '…' : ''),
+    };
+    const pt = pointCollection.add({
+      position: Cesium.Cartesian3.fromDegrees(lng, lat, 5000),
+      color: Cesium.Color.fromCssColorString(amtColor(amt)),
+      pixelSize: ptSize(amt),
+      outlineColor: Cesium.Color.BLACK.withAlpha(0.4),
+      outlineWidth: 1,
+      scaleByDistance: new Cesium.NearFarScalar(1e5, 2, 2e7, 0.4),
+    });
+    pt.id = { _cdata: cdata };
+  });
+
+  // Agency hub dots (blue) — respects CFG.hubs toggle
+  if (CFG.hubs) {
+    agencyHubs.forEach(hub => {
+      const cdata = { recipient: hub.label, amount: 0, agency: hub.label, loc: '', date: '', desc: 'Awarding agency / funding source', isAgency: true, agencyLabel: hub.label };
+      const pt = pointCollection.add({
+        position: Cesium.Cartesian3.fromDegrees(hub.lng, hub.lat, 8000),
+        color: Cesium.Color.fromCssColorString('#00aaff').withAlpha(0.9),
+        pixelSize: 10,
+        outlineColor: Cesium.Color.fromCssColorString('#004466'),
+        outlineWidth: 2,
+        scaleByDistance: new Cesium.NearFarScalar(1e5, 2, 2e7, 0.5),
+      });
+      pt.id = { _cdata: cdata };
+    });
+  }
+
+  // Arcs — respects CFG.arcs toggle + CFG.arcOpacity
+  if (CFG.arcs) {
+    const arcAlpha = CFG.arcOpacity / 100;
+    contracts.slice(0, 300).forEach(c => {
+      const name = c['Awarding Sub Agency'] || c['Awarding Agency'] || '';
+      const info = getAgencyInfo(name);
+      const sLat = info.lat, sLng = info.lng;
+      const [eLat, eLng] = getCoords(c);
+      const arcPts = buildArcPositions(sLng, sLat, eLng, eLat);
+      if (arcPts.length < 2) return;
+
+      const col = Cesium.Color.fromCssColorString(amtColor(c._amt)).withAlpha(arcAlpha);
+      polylineCollection.add({
+        positions: arcPts,
+        width: 1.0,
+        material: Cesium.Material.fromType('PolylineGlow', { glowPower: 0.12, color: col }),
+      });
+    });
+  }
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function renderSidebar(contracts) {
+  const list = document.getElementById('contracts-list');
+  list.innerHTML = '';
+  contracts.forEach(c => {
+    const amt  = c._amt;
+    const name = c['Recipient Name'] || 'Unknown';
+    const city = c['Place of Performance City Name'] || '';
+    const st   = c['Place of Performance State Code'] || c['Place of Performance Country Code'] || '';
+    const loc  = [city, st].filter(Boolean).join(', ') || '—';
+    const div  = document.createElement('div');
+    div.className = 'contract-card' + (c._id === activeId ? ' active' : '');
+    div.dataset.id = c._id;
+    div.innerHTML = `
+      <div class="c-recipient" title="${name}">${name}</div>
+      <div class="c-row">
+        <span class="c-amount t-${tier(amt)}">${fmt$(amt)}</span>
+        <span class="c-location">${loc}</span>
+      </div>
+      <div class="c-agency" title="${c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+      <div class="c-date">${fmtDate(c['Last Modified Date'])}</div>
+    `;
+    div.addEventListener('click', () => focusContract(c._id));
+    list.appendChild(div);
+  });
+}
+
+function countUp(el, from, to, fmt, ms = 600) {
+  const start = performance.now();
+  const tick = now => {
+    const t = Math.min((now - start) / ms, 1);
+    const ease = t < .5 ? 2*t*t : -1+(4-2*t)*t;
+    el.textContent = fmt(from + (to - from) * ease);
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function updateStats(contracts) {
+  const total  = contracts.reduce((s, c) => s + c._amt, 0);
+  const maxAmt = contracts.reduce((m, c) => Math.max(m, c._amt), 0);
+  const ctries = new Set(contracts.map(c => c['Place of Performance Country Code'] || 'USA')).size;
+  countUp(document.getElementById('stat-count'),     0, contracts.length, v => Math.round(v).toLocaleString());
+  countUp(document.getElementById('stat-total'),     0, total,            v => fmt$(v));
+  countUp(document.getElementById('stat-countries'), 0, ctries,           v => Math.round(v));
+  countUp(document.getElementById('stat-max'),       0, maxAmt,           v => fmt$(v));
+}
+
+function focusContract(id) {
+  activeId = id;
+  renderSidebar(filtered);
+  const c = allContracts.find(x => x._id === id);
+  if (c && viewer) {
+    const [lat, lng] = getCoords(c);
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lng, lat, 2500000),
+      duration: 1.5,
+    });
+    autoRotate = false; lastInteraction = Date.now();
+  }
+  const card = document.querySelector(`.contract-card[data-id="${id}"]`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── Detail panel ─────────────────────────────────────────────────────────────
+const detailPanel = document.getElementById('detail-panel');
+document.getElementById('detail-close').addEventListener('click', closeDetail);
+
+function closeDetail() {
+  detailPanel.classList.remove('open');
+}
+
+function field(label, value, cls = '') {
+  return `<div class="dg-field"><div class="dg-label">${label}</div><div class="dg-value ${cls}">${value || '—'}</div></div>`;
+}
+
+function amtClass(amt) {
+  if (amt >= 1e9) return 'amount-1b';
+  if (amt >= 1e8) return 'amount-100m';
+  if (amt >= 1e7) return 'amount-10m';
+  return 'amount-low';
+}
+
+function showDetail(cdata) {
+  const panel = detailPanel;
+  document.getElementById('detail-title').textContent = cdata.recipient;
+
+  if (cdata.isAgency) {
+    document.getElementById('detail-type-badge').textContent = 'Agency Hub';
+    document.getElementById('detail-type-badge').className = 'agency';
+
+    // Aggregate contracts for this agency
+    const agencyContracts = allContracts.filter(c => {
+      const n = c['Awarding Sub Agency'] || c['Awarding Agency'] || '';
+      const info = getAgencyInfo(n);
+      return info.label === cdata.agencyLabel;
+    });
+    const total = agencyContracts.reduce((s, c) => s + c._amt, 0);
+    const count = agencyContracts.length;
+
+    document.getElementById('detail-grid').innerHTML =
+      field('Agency', cdata.agencyLabel, 'blue') +
+      field('Contracts', count) +
+      field('Total Awarded', fmt$(total), amtClass(total));
+    document.getElementById('detail-desc').textContent = '';
+
+    const dacList = document.getElementById('dac-list');
+    dacList.innerHTML = '';
+    agencyContracts.slice(0, 8).forEach(c => {
+      const name = c['Recipient Name'] || 'Unknown';
+      const div = document.createElement('div');
+      div.className = 'dac-item';
+      div.innerHTML = `<span class="dac-name" title="${name}">${name}</span><span class="dac-amt ${amtClass(c._amt)}">${fmt$(c._amt)}</span>`;
+      div.addEventListener('click', () => focusContract(c._id));
+      dacList.appendChild(div);
+    });
+    document.getElementById('detail-agency-contracts').style.display = agencyContracts.length ? 'block' : 'none';
+
+  } else {
+    document.getElementById('detail-type-badge').textContent = 'Contract';
+    document.getElementById('detail-type-badge').className = 'contract';
+    document.getElementById('detail-agency-contracts').style.display = 'none';
+
+    const c = allContracts.find(x => x._id === cdata.contractId) || {};
+    const country = c['Place of Performance Country Name'] || c['Place of Performance Country Code'] || '';
+    const city = c['Place of Performance City Name'] || '';
+    const state = c['Place of Performance State Code'] || '';
+    const locParts = [city, state, country !== 'UNITED STATES' ? country : ''].filter(Boolean);
+
+    document.getElementById('detail-grid').innerHTML =
+      field('Award Amount', fmt$(cdata.amount), amtClass(cdata.amount)) +
+      field('Awarding Agency', cdata.agency) +
+      field('Location', locParts.join(', ') || cdata.loc) +
+      field('Last Modified', cdata.date) +
+      field('Award ID', c['Award ID'] || c['generated_internal_id'] || '—') +
+      field('Country', country || 'USA');
+
+    const desc = c['Description'] || cdata.desc || '';
+    const descEl = document.getElementById('detail-desc');
+    descEl.textContent = desc || '';
+    descEl.style.display = desc ? 'block' : 'none';
+  }
+
+  panel.classList.add('open');
+}
+
+// ── Geographic / agency search lookup tables ───────────────────────────────────
+const COUNTRY_MAP = {
+  'united kingdom':'GBR','uk':'GBR','britain':'GBR','england':'GBR',
+  'australia':'AUS','canada':'CAN','germany':'DEU','france':'FRA',
+  'japan':'JPN','south korea':'KOR','korea':'KOR','israel':'ISR',
+  'italy':'ITA','spain':'ESP','poland':'POL','netherlands':'NLD','holland':'NLD',
+  'norway':'NOR','denmark':'DNK','sweden':'SWE','switzerland':'CHE',
+  'saudi arabia':'SAU','uae':'ARE','emirates':'ARE','india':'IND',
+  'taiwan':'TWN','iraq':'IRQ','afghanistan':'AFG','qatar':'QAT',
+  'bahrain':'BHR','kuwait':'KWT','singapore':'SGP','philippines':'PHL',
+  'belgium':'BEL','portugal':'PRT','greece':'GRC','turkey':'TUR',
+  'romania':'ROU','czech':'CZE','hungary':'HUN','colombia':'COL',
+  'mexico':'MEX','brazil':'BRA','new zealand':'NZL','pakistan':'PAK',
+  'egypt':'EGY','morocco':'MAR','kenya':'KEN','south africa':'ZAF',
+  'ukraine':'UKR','estonia':'EST','latvia':'LVA','lithuania':'LTU',
+  'finland':'FIN','bulgaria':'BGR','slovakia':'SVK','croatia':'HRV',
+  'serbia':'SRB','albania':'ALB','north macedonia':'MKD','iraq':'IRQ',
+  'iran':'IRN','china':'CHN','russia':'RUS','cuba':'CUB',
+};
+const US_STATE_CODES = {
+  'alabama':'AL','alaska':'AK','arizona':'AZ','arkansas':'AR','california':'CA',
+  'colorado':'CO','connecticut':'CT','delaware':'DE','florida':'FL','georgia':'GA',
+  'hawaii':'HI','idaho':'ID','illinois':'IL','indiana':'IN','iowa':'IA',
+  'kansas':'KS','kentucky':'KY','louisiana':'LA','maine':'ME','maryland':'MD',
+  'massachusetts':'MA','michigan':'MI','minnesota':'MN','mississippi':'MS',
+  'missouri':'MO','montana':'MT','nebraska':'NE','nevada':'NV',
+  'new hampshire':'NH','new jersey':'NJ','new mexico':'NM','new york':'NY',
+  'north carolina':'NC','north dakota':'ND','ohio':'OH','oklahoma':'OK',
+  'oregon':'OR','pennsylvania':'PA','rhode island':'RI','south carolina':'SC',
+  'south dakota':'SD','tennessee':'TN','texas':'TX','utah':'UT','vermont':'VT',
+  'virginia':'VA','washington':'WA','west virginia':'WV','wisconsin':'WI','wyoming':'WY',
+  'dc':'DC','district of columbia':'DC','puerto rico':'PR','guam':'GU',
+  // 2-letter passthrough
+  'al':'AL','ak':'AK','az':'AZ','ar':'AR','ca':'CA','co':'CO','ct':'CT','de':'DE',
+  'fl':'FL','ga':'GA','hi':'HI','id':'ID','il':'IL','in':'IN','ia':'IA','ks':'KS',
+  'ky':'KY','la':'LA','me':'ME','md':'MD','ma':'MA','mi':'MI','mn':'MN','ms':'MS',
+  'mo':'MO','mt':'MT','ne':'NE','nv':'NV','nh':'NH','nj':'NJ','nm':'NM','ny':'NY',
+  'nc':'NC','nd':'ND','oh':'OH','ok':'OK','or':'OR','pa':'PA','ri':'RI','sc':'SC',
+  'sd':'SD','tn':'TN','tx':'TX','ut':'UT','vt':'VT','va':'VA','wa':'WA','wv':'WV',
+  'wi':'WI','wy':'WY','pr':'PR','gu':'GU',
+};
+const AGENCY_SEARCH_MAP = [
+  ['department of the army','army hq',       [{ type:'awarding',tier:'subtier', name:'Department of the Army' }]],
+  ['department of the navy','navy hq',        [{ type:'awarding',tier:'subtier', name:'Department of the Navy' }]],
+  ['air force',                               [{ type:'awarding',tier:'subtier', name:'Department of the Air Force' }]],
+  ['space force',                             [{ type:'awarding',tier:'subtier', name:'Space Force' }]],
+  ['marine corps','marines',                  [{ type:'awarding',tier:'subtier', name:'United States Marine Corps' }]],
+  ['darpa',                                   [{ type:'awarding',tier:'subtier', name:'Defense Advanced Research Projects Agency' }]],
+  ['missile defense','mda',                   [{ type:'awarding',tier:'subtier', name:'Missile Defense Agency' }]],
+  ['defense logistics','dla',                 [{ type:'awarding',tier:'subtier', name:'Defense Logistics Agency' }]],
+  ['socom','special operations',              [{ type:'awarding',tier:'subtier', name:'Special Operations Command' }]],
+  ['nasa','aeronautics and space',            [{ type:'awarding',tier:'toptier', name:'National Aeronautics and Space Administration' }]],
+  ['department of homeland','dhs',            [{ type:'awarding',tier:'toptier', name:'Department of Homeland Security' }]],
+  ['customs and border','cbp',                [{ type:'awarding',tier:'subtier', name:'Customs and Border Protection' }]],
+  ['immigration and customs','ice',           [{ type:'awarding',tier:'subtier', name:'Immigration and Customs Enforcement' }]],
+  ['coast guard',                             [{ type:'awarding',tier:'subtier', name:'Coast Guard' }]],
+  ['tsa','transportation security',           [{ type:'awarding',tier:'subtier', name:'Transportation Security Administration' }]],
+  ['secret service',                          [{ type:'awarding',tier:'subtier', name:'Secret Service' }]],
+  ['fema',                                    [{ type:'awarding',tier:'subtier', name:'Federal Emergency Management Agency' }]],
+  ['fbi','federal bureau of investigation',  [{ type:'awarding',tier:'subtier', name:'Federal Bureau of Investigation' }]],
+  ['department of energy','doe',              [{ type:'awarding',tier:'toptier', name:'Department of Energy' }]],
+  ['veterans affairs','va hq',               [{ type:'awarding',tier:'toptier', name:'Department of Veterans Affairs' }]],
+  ['transportation dept','dot hq',            [{ type:'awarding',tier:'toptier', name:'Department of Transportation' }]],
+  ['agriculture','usda',                      [{ type:'awarding',tier:'toptier', name:'Department of Agriculture' }]],
+  ['state department',                        [{ type:'awarding',tier:'toptier', name:'Department of State' }]],
+  ['health and human','hhs',                  [{ type:'awarding',tier:'toptier', name:'Department of Health and Human Services' }]],
+  ['department of justice','doj',             [{ type:'awarding',tier:'toptier', name:'Department of Justice' }]],
+  ['treasury',                                [{ type:'awarding',tier:'toptier', name:'Department of the Treasury' }]],
+  ['interior dept',                           [{ type:'awarding',tier:'toptier', name:'Department of the Interior' }]],
+  ['labor dept',                              [{ type:'awarding',tier:'toptier', name:'Department of Labor' }]],
+  ['commerce dept',                           [{ type:'awarding',tier:'toptier', name:'Department of Commerce' }]],
+  ['education dept',                          [{ type:'awarding',tier:'toptier', name:'Department of Education' }]],
+  ['housing','hud',                           [{ type:'awarding',tier:'toptier', name:'Department of Housing and Urban Development' }]],
+  ['epa','environmental protection',          [{ type:'awarding',tier:'toptier', name:'Environmental Protection Agency' }]],
+  ['gsa','general services',                  [{ type:'awarding',tier:'toptier', name:'General Services Administration' }]],
+  ['social security','ssa',                   [{ type:'awarding',tier:'toptier', name:'Social Security Administration' }]],
+];
+
+let searchType = null; // 'location' | 'keyword' | 'agency' | null
+function parseSearch(q) {
+  const lower = q.toLowerCase().trim();
+  if (!lower) { searchType = null; return {}; }
+
+  // Country
+  for (const [name, code] of Object.entries(COUNTRY_MAP)) {
+    if (lower === name) {
+      searchType = 'location';
+      return {
+        place_of_performance_scope: 'foreign',
+        place_of_performance_locations: [{ country: code }],
+      };
+    }
+  }
+  // ISO code fallback
+  const isoUpper = lower.toUpperCase();
+  if (/^[A-Z]{3}$/.test(isoUpper)) {
+    const vals = Object.values(COUNTRY_MAP);
+    if (vals.includes(isoUpper)) {
+      searchType = 'location';
+      return { place_of_performance_scope: 'foreign', place_of_performance_locations: [{ country: isoUpper }] };
+    }
+  }
+
+  // US state
+  const stateCode = US_STATE_CODES[lower];
+  if (stateCode) {
+    searchType = 'location';
+    return {
+      place_of_performance_scope: 'domestic',
+      place_of_performance_locations: [{ country: 'USA', state: stateCode }],
+    };
+  }
+
+  // Agency keyword
+  for (const row of AGENCY_SEARCH_MAP) {
+    const agencies = row[row.length - 1]; // last element is always the filter array
+    const keywords = row.slice(0, -1);    // all preceding are keyword strings
+    if (keywords.some(k => lower.includes(k))) {
+      searchType = 'agency';
+      return { agencies };
+    }
+  }
+
+  // Generic keyword → USASpending keyword search
+  searchType = 'keyword';
+  return { keywords: [q] };
+}
+
+function updateSearchBadge() {
+  const badge = document.getElementById('search-badge');
+  const clear = document.getElementById('search-clear');
+  if (!query) {
+    badge.style.display = 'none';
+    clear.style.display = 'none';
+    return;
+  }
+  clear.style.display = 'block';
+  badge.style.display = 'inline';
+  badge.className = '';
+  if (searchType === 'location') { badge.className = 'type-location'; badge.textContent = '📍 LOC'; }
+  else if (searchType === 'agency') { badge.className = 'type-agency'; badge.textContent = '🏛 AGENCY'; }
+  else if (searchType === 'keyword') { badge.className = 'type-keyword'; badge.textContent = '🔍 KEYWORD'; }
+  else { badge.style.display = 'none'; }
+}
+
+function clearSearch() {
+  query = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-badge').style.display = 'none';
+  document.getElementById('search-clear').style.display = 'none';
+  searchType = null;
+  loadData();
+}
+
+function applyFilter() {
+  let cs = [...allContracts];
+  // Client-side sort only (API already filtered by query)
+  cs.sort((a, b) => {
+    if (sortMode === 'amount') return b._amt - a._amt;
+    if (sortMode === 'date')   return (b['Last Modified Date'] || '').localeCompare(a['Last Modified Date'] || '');
+    return (a['Recipient Name'] || '').localeCompare(b['Recipient Name'] || '');
+  });
+  filtered = cs;
+  renderGlobe(filtered);
+  renderSidebar(filtered);
+  updateStats(filtered);
+}
+
+// ─── API fetch ────────────────────────────────────────────────────────────────
+// ─── Agency filter presets ─────────────────────────────────────────────────────
+const AGENCY_PRESETS = {
+  all:      null,
+  dod:      [{ type:'awarding', tier:'toptier',  name:'Department of Defense' }],
+  army:     [{ type:'awarding', tier:'subtier',  name:'Department of the Army' }],
+  navy:     [{ type:'awarding', tier:'subtier',  name:'Department of the Navy' }],
+  af:       [{ type:'awarding', tier:'subtier',  name:'Department of the Air Force' },
+             { type:'awarding', tier:'subtier',  name:'Space Force' }],
+  darpa:    [{ type:'awarding', tier:'subtier',  name:'Defense Advanced Research Projects Agency' }],
+  mda:      [{ type:'awarding', tier:'subtier',  name:'Missile Defense Agency' }],
+  dla:      [{ type:'awarding', tier:'subtier',  name:'Defense Logistics Agency' }],
+  socom:    [{ type:'awarding', tier:'subtier',  name:'U.S. Special Operations Command' }],
+  dhs:      [{ type:'awarding', tier:'toptier',  name:'Department of Homeland Security' }],
+  cbp_ice:  [{ type:'awarding', tier:'subtier',  name:'U.S. Customs and Border Protection' },
+             { type:'awarding', tier:'subtier',  name:'U.S. Immigration and Customs Enforcement' }],
+  cbp:      [{ type:'awarding', tier:'subtier',  name:'U.S. Customs and Border Protection' }],
+  ice:      [{ type:'awarding', tier:'subtier',  name:'U.S. Immigration and Customs Enforcement' }],
+  fema:     [{ type:'awarding', tier:'subtier',  name:'Federal Emergency Management Agency' }],
+  uscg:     [{ type:'awarding', tier:'subtier',  name:'U.S. Coast Guard' }],
+  doe:      [{ type:'awarding', tier:'toptier',  name:'Department of Energy' }],
+  nasa:     [{ type:'awarding', tier:'toptier',  name:'National Aeronautics and Space Administration' }],
+  hhs:      [{ type:'awarding', tier:'toptier',  name:'Department of Health and Human Services' }],
+  va:       [{ type:'awarding', tier:'toptier',  name:'Department of Veterans Affairs' }],
+  dot:      [{ type:'awarding', tier:'toptier',  name:'Department of Transportation' }],
+  gsa:      [{ type:'awarding', tier:'toptier',  name:'General Services Administration' }],
+  doj:      [{ type:'awarding', tier:'toptier',  name:'Department of Justice' }],
+  treasury: [{ type:'awarding', tier:'toptier',  name:'Department of the Treasury' }],
+  state:    [{ type:'awarding', tier:'toptier',  name:'Department of State' }],
+};
+
+async function fetchContracts() {
+  const end = new Date(), start = new Date();
+  start.setDate(end.getDate() - DAY_PRESETS[CFG.daysIdx]);
+  const fmt = d => d.toISOString().split('T')[0];
+  const fields = [
+    'Award ID','Recipient Name','Award Amount','Description',
+    'Awarding Agency','Awarding Sub Agency','Last Modified Date',
+    'Place of Performance City Name','Place of Performance State Code',
+    'Place of Performance Country Code','Place of Performance Country Name',
+    'generated_internal_id',
+  ];
+  const selectedKey = document.getElementById('agency-filter-select')?.value || 'dod';
+  const agencyFilter = AGENCY_PRESETS[selectedKey];
+  const searchExtra = parseSearch(query || '');
+  // If search provides its own agencies override, let it win; otherwise use dropdown
+  const resolvedAgencies = searchExtra.agencies || (agencyFilter || undefined);
+  const filters = {
+    award_type_codes: ['A','B','C','D'],
+    time_period: [{ start_date: fmt(start), end_date: fmt(end) }],
+    ...(resolvedAgencies ? { agencies: resolvedAgencies } : {}),
+    ...(searchExtra.keywords ? { keywords: searchExtra.keywords } : {}),
+    ...(searchExtra.place_of_performance_scope ? {
+      place_of_performance_scope: searchExtra.place_of_performance_scope,
+      place_of_performance_locations: searchExtra.place_of_performance_locations,
+    } : {}),
+  };
+  const PAGES = CFG.pages;
+  const fetchPage = async page => {
+    const res = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filters, fields, page, limit: 100, sort: 'Award Amount', order: 'desc' }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()).results || [];
+  };
+  const pages = await Promise.all(Array.from({ length: PAGES }, (_, i) => fetchPage(i + 1)));
+  return pages.flat();
+}
+
+let fetching = false;
+function playRefreshAnimation() {
+  const overlay = document.getElementById('refresh-overlay');
+  const scanline = document.getElementById('refresh-scanline');
+  // reset scanline to top
+  scanline.classList.remove('sweep');
+  scanline.style.transform = 'translateY(-3px)';
+  overlay.classList.add('active');
+  // trigger scanline sweep after a tick
+  requestAnimationFrame(() => requestAnimationFrame(() => scanline.classList.add('sweep')));
+  return new Promise(resolve => setTimeout(() => {
+    overlay.classList.remove('active');
+    scanline.classList.remove('sweep');
+    resolve();
+  }, 650));
+}
+
+async function loadData() {
+  if (fetching) return;
+  fetching = true;
+  document.getElementById('error-banner').style.display = 'none';
+  document.getElementById('refresh-btn').textContent = 'SCANNING…';
+
+  // Fire animation in parallel with fetch
+  const [raw] = await Promise.allSettled([
+    fetchContracts(),
+    playRefreshAnimation(),
+  ]);
+
+  if (raw.status === 'fulfilled') {
+    allContracts = raw.value.map((item, i) => ({
+      ...item, _id: item.generated_internal_id || String(i),
+      _amt: parseFloat(item['Award Amount']) || 0,
+    }));
+    applyFilter();
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    document.getElementById('loading').style.display = 'none';
+  } else {
+    console.error(raw.reason);
+    document.getElementById('loading').style.display = 'none';
+    const eb = document.getElementById('error-banner');
+    eb.textContent = `Data load failed (${raw.reason.message}). Retrying in 60s.`;
+    eb.style.display = 'block';
+    setTimeout(() => { eb.style.display = 'none'; }, 8000);
+  }
+
+  fetching = false;
+  document.getElementById('refresh-btn').textContent = 'REFRESH';
+}
+
+// ─── Event listeners ──────────────────────────────────────────────────────────
+let searchDebounce = null;
+document.getElementById('search-input').addEventListener('input', e => {
+  query = e.target.value.trim();
+  // Show loading badge immediately
+  const badge = document.getElementById('search-badge');
+  const clear = document.getElementById('search-clear');
+  clear.style.display = query ? 'block' : 'none';
+  if (query) { badge.className = 'type-loading'; badge.textContent = '⟳'; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    updateSearchBadge();
+    loadData();
+  }, 600);
+});
+document.getElementById('sort-select').addEventListener('change', e => { sortMode = e.target.value; applyFilter(); });
+document.getElementById('agency-filter-select').addEventListener('change', () => loadData());
+
+// ─── Token gate ───────────────────────────────────────────────────────────────
+function showTokenPrompt() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('token-overlay').classList.add('visible');
+  document.getElementById('token-input').focus();
+}
+function hideTokenPrompt() {
+  document.getElementById('token-overlay').classList.remove('visible');
+}
+
+async function boot() {
+  loadSettings(); // Apply saved settings before anything else
+  const token = localStorage.getItem('cesium_token');
+  if (!token) { showTokenPrompt(); return; }
+  document.getElementById('loading').style.display = 'flex';
+  try {
+    await initCesium(token);
+    await loadData();
+    clearInterval(refreshTimer);
+    if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
+  } catch (e) {
+    console.error('Cesium init failed:', e);
+    localStorage.removeItem('cesium_token');
+    showTokenPrompt();
+  }
+}
+
+document.getElementById('token-submit').addEventListener('click', async () => {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) return;
+  const btn = document.getElementById('token-submit');
+  const errEl = document.getElementById('token-error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'CONNECTING…';
+  // If Cesium is already running (token change), just save and reload — can't re-init
+  if (viewer) {
+    localStorage.setItem('cesium_token', token);
+    location.reload();
+    return;
+  }
+  try {
+    document.getElementById('loading').style.display = 'flex';
+    hideTokenPrompt();
+    await initCesium(token);
+    localStorage.setItem('cesium_token', token);
+    await loadData();
+    clearInterval(refreshTimer);
+    if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
+  } catch(e) {
+    console.error('Token rejected:', e);
+    localStorage.removeItem('cesium_token');
+    document.getElementById('loading').style.display = 'none';
+    showTokenPrompt();
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '⚡ CONNECT GLOBE';
+  }
+});
+
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('token-submit').click();
+});
+
+boot();
+</script>
+</body>
+</html>
