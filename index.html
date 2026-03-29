@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Global Contract Tracker</title>
+  <link rel="icon" type="image/x-icon" href="gcticon.ico">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00ff88">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GCT">
+  <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- Open Graph / Discord embed -->
   <meta property="og:title" content="Global Contract Tracker"/>
@@ -2049,7 +2057,10 @@ function renderGlobe(contracts) {
   contracts.forEach(c => {
     const name = c['Awarding Sub Agency'] || c['Awarding Agency'] || '';
     const info = getAgencyInfo(name);
-    if (!agencyMap.has(info.label)) agencyMap.set(info.label, { lat: info.lat, lng: info.lng, label: info.label });
+    if (!agencyMap.has(info.label)) agencyMap.set(info.label, { lat: info.lat, lng: info.lng, label: info.label, total: 0, count: 0 });
+    const hub = agencyMap.get(info.label);
+    hub.total += c._amt;
+    hub.count += 1;
   });
   const agencyHubs = [...agencyMap.values()];
 
@@ -2080,7 +2091,7 @@ function renderGlobe(contracts) {
   // Agency hub dots (blue) — respects CFG.hubs toggle
   if (CFG.hubs) {
     agencyHubs.forEach(hub => {
-      const cdata = { recipient: hub.label, amount: 0, agency: hub.label, loc: '', date: '', desc: 'Awarding agency / funding source', isAgency: true, agencyLabel: hub.label };
+      const cdata = { recipient: hub.label, amount: hub.total, agency: `${hub.count.toLocaleString()} contracts`, loc: '', date: '', desc: 'Click to open agency profile', isAgency: true, agencyLabel: hub.label };
       const pt = pointCollection.add({
         position: Cesium.Cartesian3.fromDegrees(hub.lng, hub.lat, 8000),
         color: Cesium.Color.fromCssColorString('#00aaff').withAlpha(0.9),
