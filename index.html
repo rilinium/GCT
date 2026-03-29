@@ -1864,6 +1864,7 @@ let polylineCollection = null;
 let labelCollection = null;
 let highlightPtCollection = null;
 let highlightEntities = [];
+let highlightRafId = null;
 let allContracts = [];
 let filtered = [];
 let activeId = null;
@@ -1944,6 +1945,7 @@ async function initCesium(token) {
   polylineCollection = viewer.scene.primitives.add(new Cesium.PolylineCollection());
   labelCollection = viewer.scene.primitives.add(new Cesium.LabelCollection());
   highlightPtCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+  highlightPtCollection.allowPicking = false;
 
   // Auto-rotation — self-sustaining under requestRenderMode
   viewer.scene.postUpdate.addEventListener(() => {
@@ -2877,6 +2879,7 @@ function updateStats(contracts) {
 
 function clearSelection() {
   activeId = null;
+  if (highlightRafId) { cancelAnimationFrame(highlightRafId); highlightRafId = null; }
   if (viewer) {
     highlightEntities.forEach(e => viewer.entities.remove(e));
     highlightEntities = [];
@@ -2886,8 +2889,15 @@ function clearSelection() {
   renderSidebar(filtered);
 }
 
+function driveHighlightAnimation() {
+  if (!activeId || !viewer) { highlightRafId = null; return; }
+  viewer.scene.requestRender();
+  highlightRafId = requestAnimationFrame(driveHighlightAnimation);
+}
+
 function highlightActivePoint(c, lat, lng) {
   if (!viewer) return;
+  if (highlightRafId) { cancelAnimationFrame(highlightRafId); highlightRafId = null; }
   highlightEntities.forEach(e => viewer.entities.remove(e));
   highlightEntities = [];
   if (highlightPtCollection) highlightPtCollection.removeAll();
@@ -2936,7 +2946,9 @@ function highlightActivePoint(c, lat, lng) {
   });
 
   highlightEntities.push(innerRing, outerRing);
-  viewer.scene.requestRender();
+
+  // Drive animation independently of globe rotation
+  highlightRafId = requestAnimationFrame(driveHighlightAnimation);
 }
 
 function focusContract(id) {
