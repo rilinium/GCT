@@ -1119,9 +1119,9 @@
     </div>
     <div id="agency-filter-row">
       <select id="agency-filter-select">
-        <option value="all">All Agencies</option>
+        <option value="all" selected>All Agencies</option>
         <optgroup label="─── Defense ───">
-          <option value="dod" selected>Department of Defense</option>
+          <option value="dod">Department of Defense</option>
           <option value="army">Army</option>
           <option value="navy">Navy</option>
           <option value="af">Air Force / Space Force</option>
@@ -3301,7 +3301,7 @@ async function fetchContracts() {
     'Place of Performance Country Code','Place of Performance Country Name',
     'generated_internal_id','NAICS Code','NAICS Description',
   ];
-  const selectedKey = document.getElementById('agency-filter-select')?.value || 'dod';
+  const selectedKey = document.getElementById('agency-filter-select')?.value || 'all';
   const agencyFilter = AGENCY_PRESETS[selectedKey];
   const searchExtra = parseSearch(query || '');
   // If search provides its own agencies override, let it win; otherwise use dropdown
