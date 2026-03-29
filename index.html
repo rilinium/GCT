@@ -180,6 +180,84 @@
 
       /* Token prompt full width */
       #token-prompt { width: 92vw !important; padding: 20px 18px !important; }
+
+      /* Date range bar — hide on mobile (too cramped) */
+      #stat-daterange-bar { display: none !important; }
+
+      /* Stats bar — push down to just below header, horizontal scroll */
+      #stats-bar {
+        top: calc(env(safe-area-inset-top) + 46px) !important;
+        left: 0 !important; right: 0 !important;
+        flex-wrap: nowrap !important; overflow-x: auto !important;
+        padding: 0 8px 4px !important; gap: 6px !important;
+        scrollbar-width: none !important;
+      }
+      #stats-bar::-webkit-scrollbar { display: none !important; }
+      .stat-card { min-width: 80px !important; flex-shrink: 0 !important; padding: 5px 10px 4px !important; }
+      .stat-label { font-size: 6px !important; letter-spacing: 1px !important; }
+      .stat-value { font-size: 13px !important; }
+
+      /* Header buttons — wrap & shrink */
+      #header-btns { flex-wrap: wrap !important; gap: 4px !important; }
+      #heatmap-btn::after { content: 'MAP'; }
+      #heatmap-btn { font-size: 0 !important; }
+      #heatmap-btn::after { font-size: 8px !important; letter-spacing: 1px !important; }
+      #timeline-btn::after { content: 'TIME'; }
+      #timeline-btn { font-size: 0 !important; }
+      #timeline-btn::after { font-size: 8px !important; letter-spacing: 1px !important; }
+
+      /* Company / Country / Agency panels — full width, slide from bottom */
+      #company-panel, #country-panel, #agency-panel {
+        width: 100% !important;
+        top: auto !important;
+        height: 75vh !important;
+        border-left: none !important;
+        border-top: 1px solid rgba(var(--accent-rgb),.25) !important;
+        border-radius: 14px 14px 0 0 !important;
+        transform: translateY(100%) !important;
+        transition: transform .3s cubic-bezier(.4,0,.2,1) !important;
+        z-index: 30 !important;
+        padding-bottom: env(safe-area-inset-bottom) !important;
+      }
+      #company-panel.open, #country-panel.open, #agency-panel.open {
+        transform: translateY(0) !important;
+      }
+
+      /* Contract cards — bigger tap targets */
+      .contract-card { padding: 11px 14px !important; }
+      .c-recipient { font-size: 11px !important; }
+
+      /* Detail panel — full width slide from bottom */
+      #detail-panel {
+        width: 100% !important; border-left: none !important;
+        border-top: 1px solid rgba(var(--accent-rgb),.2) !important;
+        border-radius: 14px 14px 0 0 !important;
+        top: auto !important; height: 55vh !important;
+        transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+        z-index: 25 !important;
+      }
+      #detail-panel.open { transform: translateY(0) !important; }
+
+      /* Settings — full screen */
+      #settings-panel { width: 100% !important; max-height: 100vh !important; border-radius: 0 !important; }
+      #settings-body { max-height: calc(100vh - 56px) !important; overflow-y: auto !important; }
+
+      /* Timeline — full width above sidebar */
+      #timeline-wrap {
+        left: 0 !important; right: 0 !important;
+        bottom: 47vh !important;
+        border-radius: 0 !important;
+        padding: 8px 14px !important;
+      }
+
+      /* Keyboard hint — not useful on touch */
+      #kb-hint { display: none !important; }
+
+      /* Disclaimer modal — full width */
+      #disclaimer-modal { width: 94vw !important; padding: 24px 20px !important; }
+
+      /* NAICS filter */
+      #naics-filter-select { font-size: 10px !important; }
     }
     .live-pill {
       display: flex; align-items: center; gap: 5px;
