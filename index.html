@@ -147,7 +147,7 @@
       #sidebar {
         position: fixed !important;
         top: auto !important; left: 0 !important; right: 0 !important;
-        bottom: 0 !important; width: 100% !important; height: 46vh !important;
+        bottom: 0 !important; width: 100% !important; height: 38vh !important;
         border-left: none !important;
         border-top: 1px solid rgba(var(--accent-rgb), .35) !important;
         border-radius: 14px 14px 0 0 !important;
@@ -155,13 +155,19 @@
         background: rgba(var(--bg-base),.96) !important;
         box-shadow: 0 -8px 40px rgba(0,0,0,.7) !important;
         padding-bottom: env(safe-area-inset-bottom) !important;
+        transition: height .25s cubic-bezier(.4,0,.2,1) !important;
       }
-      /* Drag handle indicator */
-      #sidebar::before {
+      #sidebar.collapsed { height: 36px !important; overflow: hidden !important; }
+      /* Tappable drag handle */
+      #sidebar-handle {
+        display: flex !important; align-items: center; justify-content: center;
+        width: 100% !important; height: 28px !important; cursor: pointer !important;
+        flex-shrink: 0 !important;
+      }
+      #sidebar-handle::before {
         content: '' !important; display: block !important;
         width: 36px !important; height: 3px !important;
-        background: rgba(255,255,255,.15) !important; border-radius: 2px !important;
-        margin: 8px auto 0 !important;
+        background: rgba(255,255,255,.2) !important; border-radius: 2px !important;
       }
       #sidebar-header { padding: 6px 12px 6px !important; }
       #sidebar-header h2 { font-size: 9px !important; margin-bottom: 5px !important; }
@@ -249,7 +255,7 @@
       /* Timeline — full width above sidebar */
       #timeline-wrap {
         left: 0 !important; right: 0 !important;
-        bottom: 47vh !important;
+        bottom: 39vh !important;
         border-radius: 0 !important;
         padding: 8px 14px !important;
       }
@@ -1453,6 +1459,7 @@
 </div>
 
 <div id="sidebar">
+  <div id="sidebar-handle" onclick="toggleSidebarCollapse()"></div>
   <div id="sidebar-header">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <h2>Recent Awards</h2>
@@ -2431,6 +2438,11 @@ function openSettings()  { document.getElementById('settings-overlay').classList
 function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
 function closeSettingsIfOutside(e) { if (e.target === document.getElementById('settings-overlay')) closeSettings(); }
 
+function toggleSidebarCollapse() {
+  if (window.innerWidth > 640) return;
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
 function resetSettings() {
   CFG = { ...DEFAULT_SETTINGS };
   saveSettings();
@@ -2576,6 +2588,23 @@ async function initCesium(token) {
   viewer.scene.canvas.addEventListener('mouseup', () => {
     if (!spinLocked) scheduleRotateResume();
   });
+
+  // Mobile touch: pause/resume auto-rotate
+  viewer.scene.canvas.addEventListener('touchstart', () => {
+    autoRotate = false;
+    clearTimeout(rotateResumeTimer);
+  }, { passive: true });
+  viewer.scene.canvas.addEventListener('touchend', () => {
+    if (!spinLocked) scheduleRotateResume();
+  }, { passive: true });
+
+  // Mobile touch: disable tilt so single-finger always rotates the globe cleanly
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    const ctrl = viewer.scene.screenSpaceCameraController;
+    ctrl.enableTilt = false;
+    ctrl.inertiaSpin = 0.4;
+    ctrl.inertiaZoom = 0.3;
+  }
 
   // Hover
   const evtHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
