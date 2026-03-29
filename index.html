@@ -1645,6 +1645,10 @@
             <option value="600" selected>Every 10m</option>
           </select>
         </div>
+        <div class="s-row">
+          <span class="s-label">Local cache</span>
+          <button class="s-select" id="clear-cache-btn" onclick="clearAllCache().then(()=>loadData()).then(()=>{const b=document.getElementById('clear-cache-btn');if(b)b.textContent='Cleared';setTimeout(()=>{if(b)b.textContent='Clear cache'},2000)})" style="cursor:pointer;background:rgba(255,60,60,.12);border-color:rgba(255,60,60,.3);color:rgba(255,120,120,.8)">Clear cache</button>
+        </div>
       </div>
 
       <div class="s-divider"></div>
@@ -3131,6 +3135,7 @@ async function loadAllCompanyContracts(name) {
       if (progEl) progEl.textContent = `${count.toLocaleString()} contracts loaded…`;
     });
     if (progEl) progEl.remove();
+    await cachePutEntity('company_cache', name, contracts);
     const stats = buildCompanyStats(name, contracts);
     const summaryEl   = document.getElementById('cp-summary-section');
     const agenciesEl  = document.getElementById('cp-agencies-section');
@@ -3167,7 +3172,10 @@ async function openCompanyProfile(name) {
     btn.setAttribute('onclick', btn.getAttribute('onclick').replace(/__NAME__/g, name.replace(/'/g, "\\'")));
   });
 
-  const stats   = buildCompanyStats(name);
+  // Check company contract cache
+  const cachedEntry = await cacheGetEntity('company_cache', name);
+  const fromApi = !!cachedEntry;
+  const stats   = buildCompanyStats(name, cachedEntry ? cachedEntry.contracts : null);
   const maxAmt  = stats.agencies.length ? stats.agencies[0][1] : 1;
   // Use admin override ticker if set, otherwise cached lookup
   const cached  = companyOverrides[name]?.ticker || companyTickerCache[name] || '';
@@ -3237,7 +3245,7 @@ async function openCompanyProfile(name) {
     </div>
     <div id="cp-info-section"></div>
     <div class="cp-section" id="cp-summary-section">
-      ${renderCompanySummaryHtml(stats, false)}
+      ${renderCompanySummaryHtml(stats, fromApi)}
     </div>
     <div id="cp-agencies-section">
       ${renderCompanyAgenciesHtml(stats)}
@@ -3516,6 +3524,7 @@ async function loadAllCountryContracts(code) {
       if (prog) prog.textContent = `${count.toLocaleString()} contracts loaded…`;
     });
     if (prog) prog.remove();
+    await cachePutEntity('country_cache', code, contracts);
     const body = document.getElementById('country-body');
     if (body) renderCountryBody(body, contracts, true);
   } catch (e) {
@@ -3524,7 +3533,7 @@ async function loadAllCountryContracts(code) {
   }
 }
 
-function openCountryProfile(code) {
+async function openCountryProfile(code) {
   const panel  = document.getElementById('country-panel');
   const nameEl = document.getElementById('country-name-display');
   const flagEl = document.getElementById('country-flag-display');
@@ -3534,9 +3543,14 @@ function openCountryProfile(code) {
   nameEl.textContent = COUNTRY_NAMES[code] || code;
   panel.classList.add('open');
 
-  // Show data from current filtered set immediately
-  const contracts = filtered.filter(c => c['Place of Performance Country Code'] === code);
-  renderCountryBody(body, contracts, false, code);
+  // Check country contract cache first
+  const cachedEntry = await cacheGetEntity('country_cache', code);
+  if (cachedEntry) {
+    renderCountryBody(body, cachedEntry.contracts, true, code);
+  } else {
+    const contracts = filtered.filter(c => c['Place of Performance Country Code'] === code);
+    renderCountryBody(body, contracts, false, code);
+  }
 }
 
 function closeCountryProfile() {
@@ -3984,12 +3998,18 @@ let _idb = null;
 async function getDB() {
   if (_idb) return _idb;
   _idb = await new Promise((resolve, reject) => {
-    const req = indexedDB.open('contractviewer_cache', 1);
+    const req = indexedDB.open('contractviewer_cache', 2);
     req.onupgradeneeded = e => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains('contracts')) {
         const s = db.createObjectStore('contracts', { keyPath: '_id' });
         s.createIndex('by_agency', 'agency');
+      }
+      if (!db.objectStoreNames.contains('company_cache')) {
+        db.createObjectStore('company_cache', { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains('country_cache')) {
+        db.createObjectStore('country_cache', { keyPath: 'key' });
       }
     };
     req.onsuccess = e => resolve(e.target.result);
@@ -4028,6 +4048,35 @@ async function cacheClearAgency(agency) {
       objStore.delete(cursor.primaryKey);
       cursor.continue();
     };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function cacheGetEntity(store, key) {
+  try {
+    const db = await getDB();
+    return await new Promise((resolve, reject) => {
+      const req = db.transaction(store, 'readonly').objectStore(store).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch { return null; }
+}
+async function cachePutEntity(store, key, contracts) {
+  try {
+    const db = await getDB();
+    await new Promise((resolve, reject) => {
+      const req = db.transaction(store, 'readwrite').objectStore(store).put({ key, contracts, fetchedAt: Date.now() });
+      req.onsuccess = resolve;
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { console.warn('Entity cache write failed:', e); }
+}
+async function clearAllCache() {
+  _idb = null;
+  await new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase('contractviewer_cache');
+    req.onsuccess = resolve;
     req.onerror = () => reject(req.error);
   });
 }
