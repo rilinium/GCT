@@ -280,7 +280,7 @@
     #contracts-list::-webkit-scrollbar { width: 2px; }
     #contracts-list::-webkit-scrollbar-track { background: transparent; }
     #contracts-list::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
-    .contract-card {
+.contract-card {
       padding: 9px 14px; border-bottom: 1px solid rgba(var(--accent-rgb),.04);
       cursor: pointer; transition: background .15s, border-left-color .15s;
       border-left: 2px solid transparent; position: relative;
@@ -1450,8 +1450,8 @@ function updateSetting(key, val) {
     clearInterval(refreshTimer);
     if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
   }
-  if (key === 'hubs')         { CFG.hubs = !!val;         if (filtered.length) renderGlobe(filtered); }
-  if (key === 'arcs')         { CFG.arcs = !!val;         if (filtered.length) renderGlobe(filtered); }
+  if (key === 'hubs')         { CFG.hubs = !!val;         if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); } }
+  if (key === 'arcs')         { CFG.arcs = !!val;         if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); } }
   if (key === 'scanlines')    { CFG.scanlines = !!val;    document.body.classList.toggle('no-scanlines', !val); }
   if (key === 'sort')         { CFG.sort = val;           sortMode = val; applyFilter(); }
   if (key === 'experimental') { CFG.experimental = !!val; applyExperimental(!!val); }
@@ -1460,7 +1460,7 @@ function updateSetting(key, val) {
 
 function applyLiveSettings() {
   // arc opacity re-renders globe live
-  if (filtered.length) renderGlobe(filtered);
+  if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); }
 }
 
 function setAccent(hex, el) {
@@ -1500,9 +1500,10 @@ function toggleSpin() {
   btn.textContent = spinLocked ? '▶ SPIN' : '⏸ SPIN';
   btn.classList.toggle('paused', spinLocked);
 }
-let lastInteraction = 0;
 // Map from contract _id → point primitive index (for click identification)
 const idToData = new Map();
+// Resume auto-rotation 3s after last interaction (set in initCesium once viewer exists)
+let scheduleRotateResume = () => {};
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 const ttEl = document.getElementById('tooltip');
@@ -1540,6 +1541,8 @@ async function initCesium(token) {
     infoBox: false,
     selectionIndicator: false,
     fullscreenButton: false,
+    requestRenderMode: true,
+    maximumRenderTimeChange: Infinity,
   });
 
   // Nice dark space background
@@ -1561,32 +1564,33 @@ async function initCesium(token) {
   pointCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
   polylineCollection = viewer.scene.primitives.add(new Cesium.PolylineCollection());
 
-  // Auto-rotation
+  // Auto-rotation — self-sustaining under requestRenderMode
   viewer.scene.postUpdate.addEventListener(() => {
     if (autoRotate) {
       const h = viewer.camera.positionCartographic.height;
       const spd = ROT_PRESETS[CFG.rotIdx] || 0;
-      if (h > 800000 && spd > 0) viewer.scene.camera.rotateRight(spd);
+      if (h > 800000 && spd > 0) {
+        viewer.scene.camera.rotateRight(spd);
+        viewer.scene.requestRender();
+      }
     }
   });
 
-  // Pause rotation while dragging; resume 3s after mouse is released
-  let isDragging = false;
+  // Pause rotation while dragging; resume 3s after last interaction (event-based, no polling)
+  let rotateResumeTimer = null;
+  scheduleRotateResume = function() {
+    clearTimeout(rotateResumeTimer);
+    rotateResumeTimer = setTimeout(() => {
+      if (!spinLocked) { autoRotate = true; viewer.scene.requestRender(); }
+    }, 3000);
+  };
   viewer.scene.canvas.addEventListener('mousedown', () => {
-    isDragging = true;
     autoRotate = false;
-    lastInteraction = Date.now();
-  });
-  viewer.scene.canvas.addEventListener('mousemove', () => {
-    if (isDragging) lastInteraction = Date.now();
+    clearTimeout(rotateResumeTimer);
   });
   viewer.scene.canvas.addEventListener('mouseup', () => {
-    isDragging = false;
-    lastInteraction = Date.now();
+    if (!spinLocked) scheduleRotateResume();
   });
-  setInterval(() => {
-    if (!autoRotate && !isDragging && !spinLocked && Date.now() - lastInteraction > 3000) autoRotate = true;
-  }, 500);
 
   // Hover
   const evtHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -1603,7 +1607,7 @@ async function initCesium(token) {
       const d = p.id._cdata;
       showDetail(d);
       if (d.contractId) focusContract(d.contractId);
-      autoRotate = false; lastInteraction = Date.now();
+      autoRotate = false; scheduleRotateResume();
     } else {
       closeDetail();
     }
@@ -1618,14 +1622,15 @@ function renderGlobe(contracts) {
   pointCollection.removeAll();
   polylineCollection.removeAll();
 
-  // Spread overlapping contract dots
+  // Spread overlapping contract dots (cap O(n²) to first 300)
   const pts = contracts.map(c => {
     const [lat, lng] = getCoords(c);
     return { lat, lng, c };
   });
   const SPREAD = 0.55;
-  for (let i = 0; i < pts.length; i++) {
-    for (let j = i + 1; j < pts.length; j++) {
+  const SPREAD_CAP = Math.min(pts.length, 300);
+  for (let i = 0; i < SPREAD_CAP; i++) {
+    for (let j = i + 1; j < SPREAD_CAP; j++) {
       const dLat = pts[j].lat - pts[i].lat, dLng = pts[j].lng - pts[i].lng;
       const dist = Math.sqrt(dLat*dLat + dLng*dLng);
       if (dist < SPREAD && dist > 0.0001) {
@@ -1664,7 +1669,7 @@ function renderGlobe(contracts) {
     };
     const pt = pointCollection.add({
       position: Cesium.Cartesian3.fromDegrees(lng, lat, 5000),
-      color: Cesium.Color.fromCssColorString(amtColor(amt)),
+      color: amtCesiumColor(amt),
       pixelSize: ptSize(amt),
       outlineColor: Cesium.Color.BLACK.withAlpha(0.4),
       outlineWidth: 1,
@@ -1692,7 +1697,7 @@ function renderGlobe(contracts) {
   // Arcs — respects CFG.arcs toggle + CFG.arcOpacity
   if (CFG.arcs) {
     const arcAlpha = CFG.arcOpacity / 100;
-    contracts.slice(0, 300).forEach(c => {
+    contracts.slice(0, 100).forEach(c => {
       const name = c['Awarding Sub Agency'] || c['Awarding Agency'] || '';
       const info = getAgencyInfo(name);
       const sLat = info.lat, sLng = info.lng;
@@ -1700,7 +1705,7 @@ function renderGlobe(contracts) {
       const arcPts = buildArcPositions(sLng, sLat, eLng, eLat);
       if (arcPts.length < 2) return;
 
-      const col = Cesium.Color.fromCssColorString(amtColor(c._amt)).withAlpha(arcAlpha);
+      const col = amtCesiumColor(c._amt).withAlpha(arcAlpha);
       polylineCollection.add({
         positions: arcPts,
         width: 1.0,
@@ -1710,10 +1715,18 @@ function renderGlobe(contracts) {
   }
 }
 
+// ─── Cached Cesium colors (avoids CSS string parsing per-point) ───────────────
+const _CESIUM_COLOR_CACHE = {};
+function amtCesiumColor(n) {
+  const hex = amtColor(n);
+  if (!_CESIUM_COLOR_CACHE[hex]) _CESIUM_COLOR_CACHE[hex] = Cesium.Color.fromCssColorString(hex);
+  return _CESIUM_COLOR_CACHE[hex];
+}
+
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 function renderSidebar(contracts) {
   const list = document.getElementById('contracts-list');
-  list.innerHTML = '';
+  const frag = document.createDocumentFragment();
   contracts.forEach(c => {
     const amt  = c._amt;
     const name = c['Recipient Name'] || 'Unknown';
@@ -1723,6 +1736,7 @@ function renderSidebar(contracts) {
     const div  = document.createElement('div');
     div.className = 'contract-card' + (c._id === activeId ? ' active' : '');
     div.dataset.id = c._id;
+    div.dataset.name = name;
     div.innerHTML = `
       <div class="c-recipient" title="${name}">${name}</div>
       <div class="c-row">
@@ -1732,13 +1746,10 @@ function renderSidebar(contracts) {
       <div class="c-agency" title="${c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
       <div class="c-date">${fmtDate(c['Last Modified Date'])}</div>
     `;
-    div.querySelector('.c-recipient').addEventListener('click', e => {
-      e.stopPropagation();
-      openCompanyProfile(name);
-    });
-    div.addEventListener('click', () => focusContract(c._id));
-    list.appendChild(div);
+    frag.appendChild(div);
   });
+  list.innerHTML = '';
+  list.appendChild(frag);
 }
 
 // ─── Company Profile ─────────────────────────────────────────────────────────
@@ -2158,11 +2169,24 @@ function focusContract(id) {
       destination: Cesium.Cartesian3.fromDegrees(lng, lat, 2500000),
       duration: 1.5,
     });
-    autoRotate = false; lastInteraction = Date.now();
+    autoRotate = false; scheduleRotateResume();
   }
   const card = document.querySelector(`.contract-card[data-id="${id}"]`);
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
+
+// ─── Sidebar event delegation (one listener instead of 1000+) ────────────────
+document.getElementById('contracts-list').addEventListener('click', e => {
+  const recipientEl = e.target.closest('.c-recipient');
+  if (recipientEl) {
+    e.stopPropagation();
+    const card = recipientEl.closest('.contract-card');
+    if (card) openCompanyProfile(card.dataset.name);
+    return;
+  }
+  const card = e.target.closest('.contract-card');
+  if (card) focusContract(card.dataset.id);
+});
 
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 const detailPanel = document.getElementById('detail-panel');
@@ -2412,6 +2436,7 @@ function applyFilter() {
   renderGlobe(filtered);
   renderSidebar(filtered);
   updateStats(filtered);
+  if (viewer) viewer.scene.requestRender();
 }
 
 // ─── API fetch ────────────────────────────────────────────────────────────────
