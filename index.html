@@ -3509,6 +3509,14 @@ async function fetchCountryContracts(code, onProgress) {
 }
 
 function renderCountryBody(body, contracts, fromApi, code) {
+  if (!contracts.length) {
+    const safeCode = code ? `'${code}'` : 'null';
+    body.innerHTML = `<div style="padding:28px 20px;text-align:center;font-family:'Share Tech Mono',monospace;color:rgba(255,255,255,.35);font-size:10px;letter-spacing:1px">
+      NO CONTRACTS IN CURRENT DATASET<br><br>
+      <button class="cp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
+    </div>`;
+    return;
+  }
   const total = contracts.reduce((s, c) => s + c._amt, 0);
   const agencyMap = {};
   contracts.forEach(c => { const ag = c['Awarding Agency'] || 'Unknown'; agencyMap[ag] = (agencyMap[ag] || 0) + c._amt; });
@@ -3595,6 +3603,7 @@ async function loadAllCountryContracts(code) {
 }
 
 async function openCountryProfile(code) {
+  if (!code) return;
   const panel  = document.getElementById('country-panel');
   const nameEl = document.getElementById('country-name-display');
   const flagEl = document.getElementById('country-flag-display');
