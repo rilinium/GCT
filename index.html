@@ -3371,25 +3371,7 @@ const AGENCY_PRESETS = {
 async function fetchContracts() {
   const selectedKey = document.getElementById('agency-filter-select')?.value || 'all';
   const searchExtra = parseSearch(query || '');
-  const isSearch = !!(searchExtra.keywords || searchExtra.place_of_performance_scope || searchExtra.agencies);
 
-  // ── Cached proxy path (non-search requests) ───────────────────────────────
-  if (!isSearch) {
-    const params = new URLSearchParams({
-      agency:  selectedKey,
-      daysIdx: CFG.daysIdx,
-      pages:   CFG.pages,
-    });
-    try {
-      const res = await fetch(`/api/contracts?${params}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.results) return json.results;
-      }
-    } catch (_) { /* fall through to direct */ }
-  }
-
-  // ── Direct USASpending path (search queries or proxy unavailable) ─────────
   const end = new Date(), start = new Date();
   start.setDate(end.getDate() - DAY_PRESETS[CFG.daysIdx]);
   const fmt = d => d.toISOString().split('T')[0];
