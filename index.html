@@ -2952,8 +2952,11 @@ function buildCompanyStats(name, contractList) {
   const agencySorted = Object.entries(agencies).sort((a, b) => b[1] - a[1]);
   const naicsSorted  = Object.entries(naics).sort((a, b) => b[1] - a[1]);
   const pscSorted    = Object.entries(psc).sort((a, b) => b[1] - a[1]);
-  const dates = contracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
-  const dateRange = dates.length > 1 ? { from: dates[0].slice(0,10), to: dates[dates.length-1].slice(0,10) } : dates.length === 1 ? { from: dates[0].slice(0,10), to: dates[0].slice(0,10) } : null;
+  const startDates = contracts.map(c => c['Period of Performance Start Date']).filter(Boolean).sort();
+  const endDates   = contracts.map(c => c['Period of Performance Current End Date']).filter(Boolean).sort();
+  const dateRange  = startDates.length
+    ? { from: startDates[0].slice(0,10), to: (endDates.length ? endDates[endDates.length-1] : startDates[startDates.length-1]).slice(0,10) }
+    : null;
   return { name, contracts, total, ceiling, agencies: agencySorted, naics: naicsSorted, psc: pscSorted, dateRange, recipientId, uei, parentName };
 }
 
@@ -3445,8 +3448,11 @@ function renderCountryBody(body, contracts, fromApi, code) {
   const recipMap = {};
   contracts.forEach(c => { const r = c['Recipient Name'] || 'Unknown'; recipMap[r] = (recipMap[r] || 0) + c._amt; });
   const recipients = Object.entries(recipMap).sort((a, b) => b[1] - a[1]).slice(0, 20);
-  const dates = contracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
-  const dateRange = dates.length ? `${dates[0].slice(0,10)} → ${dates[dates.length-1].slice(0,10)}` : '—';
+  const startDates2 = contracts.map(c => c['Period of Performance Start Date']).filter(Boolean).sort();
+  const endDates2   = contracts.map(c => c['Period of Performance Current End Date']).filter(Boolean).sort();
+  const dateRange   = startDates2.length
+    ? `${startDates2[0].slice(0,10)} → ${(endDates2.length ? endDates2[endDates2.length-1] : startDates2[startDates2.length-1]).slice(0,10)}`
+    : '—';
 
   const agencyRows = agencies.slice(0, 8).map(([ag, amt]) => {
     const pct = Math.round((amt / maxAmt) * 100);
