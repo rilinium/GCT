@@ -4168,37 +4168,42 @@ async function loadData() {
   setLoadProgress(70, 'Fetching contracts...');
 
   const agencyKey = document.getElementById('agency-filter-select')?.value || 'all';
+  const searchExtra = parseSearch(query || '');
+  const isSearch = !!(searchExtra.keywords || searchExtra.place_of_performance_scope || searchExtra.agencies);
+
   const windowStart = new Date();
   windowStart.setDate(windowStart.getDate() - DAY_PRESETS[CFG.daysIdx]);
   const windowStartStr = windowStart.toISOString().split('T')[0];
 
-  // ── Serve cache immediately if available ──────────────────────────────────
+  // ── Serve cache immediately if available (skip for search queries) ─────────
   let db, cached = [];
-  try {
-    db = await getDB();
-    const all = await cacheGetByAgency(agencyKey);
-    cached = all.filter(c => (c['Last Modified Date'] || '') >= windowStartStr);
-  } catch (e) { console.warn('Cache read failed:', e); }
+  if (!isSearch) {
+    try {
+      db = await getDB();
+      const all = await cacheGetByAgency(agencyKey);
+      cached = all.filter(c => (c['Last Modified Date'] || '') >= windowStartStr);
+    } catch (e) { console.warn('Cache read failed:', e); }
 
-  if (cached.length) {
-    allContracts = cached;
-    populateNaicsDropdown();
-    initTimeline();
-    applyFilter();
-    renderTopMovers();
-    setLoadProgress(100, 'Ready');
-    document.getElementById('last-updated').textContent = 'Updating…';
-    document.getElementById('loading').style.display = 'none';
+    if (cached.length) {
+      allContracts = cached;
+      populateNaicsDropdown();
+      initTimeline();
+      applyFilter();
+      renderTopMovers();
+      setLoadProgress(100, 'Ready');
+      document.getElementById('last-updated').textContent = 'Updating…';
+      document.getElementById('loading').style.display = 'none';
+    }
   }
 
   // ── Determine fetch strategy ───────────────────────────────────────────────
-  const newestCached = cached.length
+  const newestCached = (!isSearch && cached.length)
     ? cached.map(c => c['Last Modified Date']).filter(Boolean).sort().pop()
     : null;
   const isFullMiss = !newestCached || newestCached < windowStartStr;
-  const fetchOpts = isFullMiss
-    ? {}
-    : { startDate: newestCached, sort: 'Last Modified Date' };
+  const fetchOpts = (!isSearch && !isFullMiss)
+    ? { startDate: newestCached, sort: 'Last Modified Date' }
+    : {};
 
   // Fire animation in parallel with fetch
   const [raw] = await Promise.allSettled([
@@ -4215,7 +4220,10 @@ async function loadData() {
       _amt: parseFloat(item['Award Amount']) || 0,
     }));
 
-    if (isFullMiss) {
+    if (isSearch) {
+      // Search results: display only, never touch the cache
+      allContracts = incoming;
+    } else if (isFullMiss) {
       // Replace stale/absent cache for this agency scope
       if (db) try { await cacheClearAgency(agencyKey); await cachePut(incoming); } catch (e) { console.warn('Cache write failed:', e); }
       allContracts = incoming;
