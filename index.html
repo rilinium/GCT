@@ -1862,6 +1862,8 @@ let viewer = null;
 let pointCollection = null;
 let polylineCollection = null;
 let labelCollection = null;
+let highlightPtCollection = null;
+let highlightEntities = [];
 let allContracts = [];
 let filtered = [];
 let activeId = null;
@@ -1941,6 +1943,7 @@ async function initCesium(token) {
   pointCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
   polylineCollection = viewer.scene.primitives.add(new Cesium.PolylineCollection());
   labelCollection = viewer.scene.primitives.add(new Cesium.LabelCollection());
+  highlightPtCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
 
   // Auto-rotation — self-sustaining under requestRenderMode
   viewer.scene.postUpdate.addEventListener(() => {
@@ -2002,6 +2005,7 @@ async function initCesium(token) {
       autoRotate = false; scheduleRotateResume();
     } else {
       closeDetail();
+      clearSelection();
     }
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 }
@@ -2871,15 +2875,81 @@ function updateStats(contracts) {
   if (el) el.textContent = fmt(start) + ' – ' + fmt(end) + ' (' + duration + ')';
 }
 
+function clearSelection() {
+  activeId = null;
+  if (viewer) {
+    highlightEntities.forEach(e => viewer.entities.remove(e));
+    highlightEntities = [];
+    if (highlightPtCollection) highlightPtCollection.removeAll();
+    viewer.scene.requestRender();
+  }
+  renderSidebar(filtered);
+}
+
+function highlightActivePoint(c, lat, lng) {
+  if (!viewer) return;
+  highlightEntities.forEach(e => viewer.entities.remove(e));
+  highlightEntities = [];
+  if (highlightPtCollection) highlightPtCollection.removeAll();
+
+  const pos = Cesium.Cartesian3.fromDegrees(lng, lat, 6000);
+  const accentColor = Cesium.Color.fromCssColorString('#00ff88');
+  const amt = c._amt;
+
+  // Large glowing dot on top
+  highlightPtCollection.add({
+    position: pos,
+    color: Cesium.Color.WHITE,
+    pixelSize: 22,
+    outlineColor: accentColor.withAlpha(0.95),
+    outlineWidth: 5,
+    scaleByDistance: new Cesium.NearFarScalar(5e4, 2.5, 2e7, 0.5),
+    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+  });
+
+  // Inner pulsing ring — animates via CallbackProperty (forces continuous render)
+  const innerRing = viewer.entities.add({
+    position: pos,
+    ellipse: {
+      semiMajorAxis: new Cesium.CallbackProperty(() => 25000 + 8000 * Math.abs(Math.sin(Date.now() / 500)), false),
+      semiMinorAxis: new Cesium.CallbackProperty(() => 25000 + 8000 * Math.abs(Math.sin(Date.now() / 500)), false),
+      material: Cesium.Color.TRANSPARENT,
+      outline: true,
+      outlineColor: new Cesium.CallbackProperty(() => accentColor.withAlpha(0.3 + 0.5 * Math.abs(Math.sin(Date.now() / 500))), false),
+      outlineWidth: 2,
+      height: 5000,
+    },
+  });
+
+  // Outer static ring
+  const outerRing = viewer.entities.add({
+    position: pos,
+    ellipse: {
+      semiMajorAxis: 60000,
+      semiMinorAxis: 60000,
+      material: accentColor.withAlpha(0.04),
+      outline: true,
+      outlineColor: accentColor.withAlpha(0.25),
+      outlineWidth: 1,
+      height: 4000,
+    },
+  });
+
+  highlightEntities.push(innerRing, outerRing);
+  viewer.scene.requestRender();
+}
+
 function focusContract(id) {
   activeId = id;
   renderSidebar(filtered);
   const c = allContracts.find(x => x._id === id);
   if (c && viewer) {
     const [lat, lng] = getCoords(c);
+    highlightActivePoint(c, lat, lng);
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(lng, lat, 2500000),
-      duration: 1.5,
+      destination: Cesium.Cartesian3.fromDegrees(lng, lat, 350000),
+      duration: 1.8,
+      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
     });
     autoRotate = false; scheduleRotateResume();
   }
@@ -3696,6 +3766,7 @@ document.addEventListener('keydown', e => {
     closeAgencyProfile();
     closeCountryProfile();
     closeSettings();
+    clearSelection();
   } else if (key === 'R' && !e.ctrlKey && !e.metaKey) {
     loadData();
   } else if (key === 'S') {
