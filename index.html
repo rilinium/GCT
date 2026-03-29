@@ -323,6 +323,34 @@
     #company-body::-webkit-scrollbar { width: 2px; }
     #company-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
     .cp-section { padding: 12px 14px; border-bottom: 1px solid rgba(var(--accent-rgb),.06); }
+
+    /* ── Company Wiki section ── */
+    #cp-wiki-section { display: flex; flex-direction: column; gap: 10px; }
+    #cp-wiki-logo-wrap {
+      display: flex; align-items: center; gap: 12px;
+    }
+    #cp-wiki-company-logo {
+      width: 52px; height: 52px; object-fit: contain; border-radius: 4px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      padding: 4px; flex-shrink: 0;
+    }
+    #cp-wiki-company-name-sub {
+      font-family: 'Orbitron', monospace; font-size: 8px; color: rgba(var(--accent-rgb),.5);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    #cp-wiki-desc {
+      font-size: 9px; color: #7a9a88; line-height: 1.7; letter-spacing: .3px;
+    }
+    #cp-wiki-attr {
+      display: flex; align-items: center; gap: 5px;
+    }
+    #cp-wiki-attr a {
+      display: flex; align-items: center;
+      text-decoration: none; opacity: .5; transition: opacity .15s;
+    }
+    #cp-wiki-attr a:hover { opacity: 1; }
+    #cp-wiki-attr img { width: 18px; height: 18px; }
+
     .cp-section-title {
       font-family: 'Orbitron', monospace; font-size: 7px; font-weight: 700;
       color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
@@ -434,6 +462,131 @@
     .ctp-recipient-row { padding: 6px 0; border-bottom: 1px solid rgba(var(--accent-rgb),.04); cursor: pointer; }
     .ctp-recipient-row:hover { background: rgba(var(--accent-rgb),.06); margin: 0 -14px; padding: 6px 14px; }
     .ctp-recipient-name { font-size: 10px; color: rgba(255,255,255,.8); font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Agency Profile Panel ── */
+    #agency-panel {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
+      background: linear-gradient(180deg, rgba(0,4,18,.98) 0%, rgba(0,2,12,.98) 100%);
+      border-left: 1px solid rgba(var(--accent-rgb),.25);
+      backdrop-filter: blur(18px); z-index: 22;
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    #agency-panel.open { transform: translateX(0); }
+    #agency-panel-header {
+      padding: 14px 14px 12px; border-bottom: 1px solid rgba(var(--accent-rgb),.1);
+      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+    }
+    #agency-back-btn {
+      background: none; border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      padding: 4px 8px; border-radius: 3px; cursor: pointer; letter-spacing: 1px;
+      flex-shrink: 0; transition: background .15s;
+    }
+    #agency-back-btn:hover { background: rgba(var(--accent-rgb),.1); }
+    #agency-name-display {
+      font-family: 'Orbitron', monospace; font-size: 9px; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      text-shadow: 0 0 8px rgba(var(--accent-rgb),.4); flex: 1;
+    }
+    #agency-body { flex: 1; overflow-y: auto; }
+    #agency-body::-webkit-scrollbar { width: 2px; }
+    #agency-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
+
+    /* ── Sidebar tabs + Top Movers ── */
+    #sidebar-tabs { display: flex; margin-bottom: 8px; }
+    .stab {
+      flex: 1; padding: 5px 0; background: none;
+      border: 1px solid rgba(var(--accent-rgb),.15); color: rgba(255,255,255,.35);
+      font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 2px;
+      cursor: pointer; transition: all .12s; text-transform: uppercase;
+    }
+    .stab:first-child { border-radius: 3px 0 0 3px; border-right: none; }
+    .stab:last-child  { border-radius: 0 3px 3px 0; }
+    .stab.active { background: rgba(var(--accent-rgb),.1); border-color: var(--accent); color: var(--accent); }
+    #top-movers { display: none; flex: 1; overflow-y: auto; }
+    #top-movers.visible { display: block; }
+    .tm-row {
+      display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+      border-bottom: 1px solid rgba(var(--accent-rgb),.06); cursor: pointer; transition: background .12s;
+    }
+    .tm-row:hover { background: rgba(var(--accent-rgb),.06); }
+    .tm-rank { font-family: 'Orbitron', monospace; font-size: 8px; color: rgba(var(--accent-rgb),.35); width: 16px; flex-shrink: 0; text-align: right; }
+    .tm-info { flex: 1; min-width: 0; }
+    .tm-name { font-size: 10px; color: #cceedd; font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
+    .tm-meta { font-size: 8px; color: rgba(255,255,255,.3); }
+    .tm-amt { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+    /* ── Watchlist ── */
+    #watchlist-section { border-bottom: 1px solid rgba(var(--accent-rgb),.1); }
+    #watchlist-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; cursor: pointer; transition: background .12s;
+    }
+    #watchlist-header:hover { background: rgba(var(--accent-rgb),.04); }
+    #watchlist-title {
+      font-family: 'Orbitron', monospace; font-size: 7px; font-weight: 700;
+      color: rgba(255,200,0,.5); letter-spacing: 3px; text-transform: uppercase;
+    }
+    #watchlist-count { font-size: 8px; color: rgba(255,200,0,.35); font-family: 'Share Tech Mono', monospace; }
+    #watchlist-list { overflow-y: auto; }
+    .wl-row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-top: 1px solid rgba(var(--accent-rgb),.04); cursor: pointer; }
+    .wl-row:hover { background: rgba(var(--accent-rgb),.06); }
+    .wl-star { color: #ffcc00; font-size: 10px; flex-shrink: 0; }
+    .wl-name { flex: 1; font-size: 9px; color: #cceedd; font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wl-amt { font-size: 9px; font-family: 'Orbitron', monospace; font-weight: 700; flex-shrink: 0; margin-right: 4px; }
+    .wl-remove { color: rgba(255,255,255,.2); font-size: 10px; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; }
+    .wl-remove:hover { color: #ff4466; }
+    #watch-btn {
+      background: none; border: 1px solid rgba(255,200,0,.25);
+      color: rgba(255,200,0,.45); font-size: 13px; padding: 2px 7px;
+      border-radius: 3px; cursor: pointer; transition: all .15s; flex-shrink: 0; line-height: 1;
+    }
+    #watch-btn.watching { border-color: #ffcc00; color: #ffcc00; background: rgba(255,200,0,.1); }
+    #watch-btn:hover { border-color: #ffcc00; color: #ffcc00; }
+
+    /* ── NAICS filter ── */
+    #naics-filter-row { padding: 0 10px 8px; display: none; }
+    #naics-filter-select {
+      width: 100%; background: rgba(0,0,0,.4); border: 1px solid rgba(var(--accent-rgb),.2);
+      color: rgba(255,255,255,.5); font-size: 9px; font-family: 'Share Tech Mono', monospace;
+      padding: 5px 8px; border-radius: 3px; cursor: pointer; outline: none;
+    }
+
+    /* ── Heatmap / Timeline header buttons ── */
+    .header-btn.active {
+      background: rgba(var(--accent-rgb),.15); border-color: var(--accent); color: var(--accent);
+      box-shadow: 0 0 10px rgba(var(--accent-rgb),.2);
+    }
+
+    /* ── Timeline scrubber ── */
+    #timeline-wrap {
+      position: absolute; bottom: 30px; left: 0; right: 320px;
+      padding: 8px 28px 0; z-index: 11; display: none;
+      pointer-events: none;
+    }
+    #timeline-wrap.visible { display: block; pointer-events: all; }
+    #timeline-labels { display: flex; justify-content: space-between; font-size: 8px; color: #334433; letter-spacing: .5px; margin-bottom: 4px; font-family: 'Share Tech Mono', monospace; }
+    #timeline-value { color: var(--accent); text-align: center; }
+    #timeline-slider {
+      width: 100%; -webkit-appearance: none; appearance: none;
+      height: 3px; background: rgba(var(--accent-rgb),.2); border-radius: 2px; outline: none; cursor: pointer;
+      accent-color: var(--accent);
+    }
+    #timeline-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; box-shadow: 0 0 8px rgba(var(--accent-rgb),.7);
+    }
+
+    /* ── Keyboard shortcut hint ── */
+    #kb-hint {
+      position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,.85); border: 1px solid rgba(var(--accent-rgb),.2);
+      border-radius: 4px; padding: 8px 14px; z-index: 60; pointer-events: none;
+      font-size: 9px; color: rgba(255,255,255,.5); font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 1px; display: none; white-space: nowrap;
+    }
 
     /* ── Loading ── */
     #loading {
@@ -808,6 +961,55 @@
       letter-spacing: .5px;
     }
 
+    /* ── Disclaimer footer text ── */
+    #disclaimer-text {
+      font-size: 8px; color: #334433; letter-spacing: .5px; opacity: .7;
+      font-style: italic;
+    }
+
+    /* ── First-load disclaimer modal ── */
+    #disclaimer-overlay {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,.88); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #disclaimer-overlay.visible { display: flex; }
+    #disclaimer-modal {
+      background: rgba(0,4,18,.98); border: 1px solid rgba(255,200,0,.35);
+      border-radius: 6px; padding: 32px 36px; z-index: 91; width: 460px; max-width: 95vw;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 0 60px rgba(255,200,0,.1), 0 0 0 1px rgba(255,200,0,.06);
+      position: relative;
+    }
+    #disclaimer-modal::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #ffcc00, transparent);
+      border-radius: 6px 6px 0 0;
+    }
+    #disclaimer-modal .dm-label {
+      font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 900;
+      color: #ffcc00; letter-spacing: 5px; text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(255,200,0,.5); margin-bottom: 8px;
+    }
+    #disclaimer-modal h2 {
+      font-family: 'Orbitron', monospace; font-size: 15px; color: #eeddaa;
+      letter-spacing: 1px; margin-bottom: 14px; font-weight: 700;
+    }
+    #disclaimer-modal p {
+      font-size: 10px; color: #7a8a6a; line-height: 1.8; letter-spacing: .4px;
+      margin-bottom: 12px;
+    }
+    #disclaimer-modal p strong { color: #aabb88; }
+    #disclaimer-ack {
+      width: 100%; margin-top: 8px;
+      background: rgba(255,200,0,.1); border: 1px solid rgba(255,200,0,.4);
+      border-radius: 3px; color: #ffcc00; font-family: 'Orbitron', monospace;
+      font-size: 11px; padding: 12px; cursor: pointer; letter-spacing: 3px;
+      transition: background .15s, box-shadow .15s; text-transform: uppercase;
+      font-weight: 700;
+    }
+    #disclaimer-ack:hover { background: rgba(255,200,0,.2); box-shadow: 0 0 20px rgba(255,200,0,.25); }
+
     /* Reset button */
     #settings-reset {
       margin: 16px 20px 0;
@@ -824,6 +1026,17 @@
 
 <div id="loading"><div class="spinner"></div><p>Initializing globe...</p></div>
 <div id="cesiumContainer"></div>
+
+<!-- First-load disclaimer modal -->
+<div id="disclaimer-overlay">
+<div id="disclaimer-modal">
+  <div class="dm-label">Notice</div>
+  <h2>Data Disclaimer</h2>
+  <p>The contract data displayed on this tracker may be <strong>incorrect, incomplete, or outdated</strong>. Information is sourced from public government databases and may not reflect the current state of any contract, award, or agency relationship.</p>
+  <p>This tool is intended for <strong>informational purposes only</strong>. Do not rely on this data for legal, financial, or procurement decisions.</p>
+  <button id="disclaimer-ack" onclick="dismissDisclaimer()">I Understand</button>
+</div>
+</div>
 
 <!-- Token prompt overlay -->
 <div id="token-overlay">
@@ -863,6 +1076,8 @@
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
     <div id="header-btns">
       <button id="spin-btn" class="header-btn" onclick="toggleSpin()">⏸ SPIN</button>
+      <button id="heatmap-btn" class="header-btn" onclick="toggleHeatmap()" title="Heatmap mode (H)">HEATMAP</button>
+      <button id="timeline-btn" class="header-btn" onclick="toggleTimeline()" title="Timeline scrubber (T)">TIMELINE</button>
       <button id="refresh-btn" class="header-btn" onclick="loadData()">REFRESH</button>
       <button class="header-btn" onclick="openSettings()">⚙ SETTINGS</button>
     </div>
@@ -878,7 +1093,14 @@
 
 <div id="sidebar">
   <div id="sidebar-header">
-    <h2>Recent Awards</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h2>Recent Awards</h2>
+      <div style="display:flex;gap:0">
+        <button class="stab active" id="stab-list" onclick="switchTab('list')">LIST</button>
+        <button class="stab" id="stab-movers" onclick="switchTab('movers')">TOP $</button>
+        <button class="stab" id="stab-watch" onclick="switchTab('watch')">WATCH</button>
+      </div>
+    </div>
     <div id="agency-filter-row">
       <select id="agency-filter-select">
         <option value="all">All Agencies</option>
@@ -925,7 +1147,20 @@
         <option value="name">Name</option>
       </select>
     </div>
+    <div id="naics-filter-row">
+      <select id="naics-filter-select">
+        <option value="all">All NAICS Codes</option>
+      </select>
+    </div>
   </div>
+  <div id="watchlist-section" style="display:none">
+    <div id="watchlist-header">
+      <span>★ Watchlist</span>
+      <span id="wl-count" style="font-size:9px;color:rgba(255,255,255,.4)"></span>
+    </div>
+    <div id="watchlist-list"></div>
+  </div>
+  <div id="top-movers"></div>
   <div id="contracts-list"></div>
 </div>
 
@@ -934,8 +1169,18 @@
   <div id="company-panel-header">
     <button id="company-back-btn" onclick="closeCompanyProfile()">← Back</button>
     <div id="company-name-display">—</div>
+    <button id="watch-btn" onclick="toggleWatch()" title="Add to watchlist">☆</button>
   </div>
   <div id="company-body"></div>
+</div>
+
+<!-- Agency Profile Panel -->
+<div id="agency-panel">
+  <div id="agency-panel-header">
+    <button id="agency-back-btn" onclick="closeAgencyProfile()">← Back</button>
+    <div id="agency-name-display">—</div>
+  </div>
+  <div id="agency-body"></div>
 </div>
 
 <!-- Country Profile Panel -->
@@ -1125,6 +1370,18 @@
             <option value="name">Name</option>
           </select>
         </div>
+
+        <div class="s-row s-slider-row">
+          <div class="s-slider-top">
+            <span class="s-label">Text scale</span>
+            <span class="s-value" id="sv-textScale">100%</span>
+          </div>
+          <input type="range" class="s-slider" id="si-textScale" min="80" max="130" step="5" value="100"
+            oninput="updateSlider('textScale', this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+            <span>80%</span><span>100%</span><span>130%</span>
+          </div>
+        </div>
       </div>
 
       <button id="settings-reset" onclick="resetSettings()">⟳ Reset to Defaults</button>
@@ -1138,6 +1395,17 @@
 
 <div id="error-banner"></div>
 
+<div id="timeline-wrap">
+  <div id="timeline-labels">
+    <span id="tl-start">—</span>
+    <span id="tl-value">—</span>
+    <span id="tl-end">Today</span>
+  </div>
+  <input type="range" id="timeline-slider" min="0" max="100" value="100" oninput="onTimelineScrub(this.value)">
+</div>
+
+<div id="kb-hint">ESC close &nbsp;·&nbsp; R refresh &nbsp;·&nbsp; S settings &nbsp;·&nbsp; / search &nbsp;·&nbsp; H heatmap &nbsp;·&nbsp; T timeline</div>
+
 <div id="footer">
   <div id="legend">
     <div class="leg"><div class="leg-dot" style="background:#ff4444"></div>$1B+</div>
@@ -1147,9 +1415,21 @@
     <div class="leg"><div class="leg-dot" style="background:#00aaff"></div>Agency</div>
   </div>
   <div id="last-updated">Last updated: —</div>
+  <div id="disclaimer-text">Data may be incorrect, incomplete, or outdated.</div>
 </div>
 
 <script>
+// ─── Disclaimer modal ─────────────────────────────────────────────────────────
+function dismissDisclaimer() {
+  document.getElementById('disclaimer-overlay').classList.remove('visible');
+  localStorage.setItem('gct_disclaimer_seen', '1');
+}
+function maybeShowDisclaimer() {
+  if (!localStorage.getItem('gct_disclaimer_seen')) {
+    document.getElementById('disclaimer-overlay').classList.add('visible');
+  }
+}
+
 // ─── Config ──────────────────────────────────────────────────────────────────
 window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
 
@@ -1398,6 +1678,7 @@ const DEFAULT_SETTINGS = {
   hubs: true, arcs: true, arcOpacity: 35, scanlines: true,
   accent: '#00ff88',
   sort: 'amount',
+  textScale: 100,
   experimental: false,
 };
 let CFG = { ...DEFAULT_SETTINGS };
@@ -1445,6 +1726,9 @@ function applyAllSettings() {
   clearInterval(refreshTimer);
   if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
 
+  // Text scale
+  applyTextScale();
+
   // Experimental mode (must run before syncSettingsUI so slider max is set correctly)
   applyExperimental(CFG.experimental);
 
@@ -1464,6 +1748,7 @@ function syncSettingsUI() {
   set('si-arcOpacity', CFG.arcOpacity);
   setCheck('si-scanlines', CFG.scanlines);
   set('si-sort', CFG.sort);
+  set('si-textScale', CFG.textScale);
   setCheck('si-experimental', CFG.experimental);
   // Display values
   updateDisplayValues();
@@ -1477,6 +1762,7 @@ function updateDisplayValues() {
   if (el('sv-days'))       el('sv-days').textContent       = DAY_PRESETS[CFG.daysIdx] + ' days';
   if (el('sv-rotation'))   el('sv-rotation').textContent   = ROT_LABELS[CFG.rotIdx];
   if (el('sv-arcOpacity')) el('sv-arcOpacity').textContent = CFG.arcOpacity + '%';
+  if (el('sv-textScale'))  el('sv-textScale').textContent  = CFG.textScale + '%';
 }
 
 function applyExperimental(on) {
@@ -1510,10 +1796,12 @@ function updateSlider(key, rawVal) {
   if (key === 'days')       { CFG.daysIdx = v;    }
   if (key === 'rotation')   { CFG.rotIdx = v;     }
   if (key === 'arcOpacity') { CFG.arcOpacity = v; }
+  if (key === 'textScale')  { CFG.textScale = v;  }
   updateDisplayValues();
   saveSettings();
   // Live-apply non-fetch settings immediately
   if (key === 'rotation' || key === 'arcOpacity') applyLiveSettings();
+  if (key === 'textScale') applyTextScale();
 }
 
 function updateSetting(key, val) {
@@ -1533,6 +1821,14 @@ function updateSetting(key, val) {
 function applyLiveSettings() {
   // arc opacity re-renders globe live
   if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); }
+}
+
+function applyTextScale() {
+  const scale = CFG.textScale / 100;
+  ['header','stats-bar','sidebar','company-panel','country-panel','detail-panel','footer','settings-overlay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.zoom = scale;
+  });
 }
 
 function setAccent(hex, el) {
@@ -1870,6 +2166,116 @@ function renderSidebar(contracts) {
 
 // ─── Company Profile ─────────────────────────────────────────────────────────
 const companyTickerCache = {};
+const wikiCache = {};
+
+// Returns true only if the Wikipedia article is plausibly about this company
+function wikiArticleMatchesCompany(data, companyName) {
+  if (!data || data.type === 'disambiguation') return false;
+  const strip = /\b(corporation|corp|company|co|inc|llc|ltd|the|group|systems|technologies|technology|defense|services|solutions|international|global|national|united|american|holdings|partners|associates|mobility|industries|industries|enterprises)\b/gi;
+  const meaningfulWords = companyName.toLowerCase().replace(strip, '').trim()
+    .split(/\s+/).filter(w => w.length > 2);
+  if (!meaningfulWords.length) return false;
+  const articleTitle = (data.title || '').toLowerCase();
+  const matchCount = meaningfulWords.filter(w => articleTitle.includes(w)).length;
+  // Require 2+ matches for longer names, 1 for short ones
+  const required = meaningfulWords.length >= 3 ? 2 : 1;
+  return matchCount >= required;
+}
+
+async function fetchWikiData(companyName) {
+  if (wikiCache[companyName] !== undefined) return wikiCache[companyName];
+  try {
+    // Try direct title lookup, fall back to search
+    let res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(companyName)}`);
+    let wikiTitle = null;
+    if (!res.ok) {
+      const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(companyName)}&format=json&origin=*&srlimit=1`);
+      const sd = await sr.json();
+      const hit = sd?.query?.search?.[0];
+      if (!hit) { wikiCache[companyName] = null; return null; }
+      wikiTitle = hit.title;
+      res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`);
+      if (!res.ok) { wikiCache[companyName] = null; return null; }
+    }
+    const data = await res.json();
+
+    // Reject if the article doesn't match the company name
+    if (!wikiArticleMatchesCompany(data, companyName)) {
+      wikiCache[companyName] = null;
+      return null;
+    }
+    wikiTitle = wikiTitle || data.title;
+
+    let logoUrl = data.thumbnail?.source || null;
+
+    // If no thumbnail, search the article's images for a logo file
+    if (!logoUrl) {
+      try {
+        const imgListRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(wikiTitle)}&prop=images&format=json&origin=*`);
+        const imgListData = await imgListRes.json();
+        const images = Object.values(imgListData?.query?.pages || {})[0]?.images || [];
+        const genericLogos = ['commons-logo','wikipedia-logo','wikimedia','wikidata','edit-icon','question_mark','information icon'];
+        const logoFile = images.find(img => {
+          const t = img.title.toLowerCase();
+          return /logo/i.test(t) && !genericLogos.some(s => t.includes(s));
+        });
+        if (logoFile) {
+          const infoRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(logoFile.title)}&prop=imageinfo&iiprop=url&iiurlwidth=120&format=json&origin=*`);
+          const infoData = await infoRes.json();
+          const imgInfo = Object.values(infoData?.query?.pages || {})[0]?.imageinfo?.[0];
+          logoUrl = imgInfo?.thumburl || imgInfo?.url || null;
+        }
+      } catch(_) {}
+    }
+
+    const result = {
+      description: data.extract || null,
+      logoUrl,
+      pageUrl:     data.content_urls?.desktop?.page || null,
+      title:       data.title || companyName,
+    };
+    wikiCache[companyName] = result;
+    return result;
+  } catch(e) {
+    wikiCache[companyName] = null;
+    return null;
+  }
+}
+
+function populateWikiSection(data) {
+  const descEl  = document.getElementById('cp-wiki-desc');
+  const logoEl  = document.getElementById('cp-wiki-company-logo');
+  const attrEl  = document.getElementById('cp-wiki-attr');
+  const linkEl  = document.getElementById('cp-wiki-link');
+  const nameEl  = document.getElementById('cp-wiki-company-name-sub');
+  if (!descEl) return;
+
+  if (!data) {
+    descEl.textContent = 'No Wikipedia article found.';
+    descEl.style.color = 'rgba(255,255,255,.15)';
+    return;
+  }
+
+  // Description — cap to ~2 sentences
+  const sentences = (data.description || '').split(/(?<=[.!?])\s+/);
+  descEl.textContent = sentences.slice(0, 2).join(' ');
+  descEl.style.color = '';
+
+  // Logo
+  if (data.logoUrl && logoEl) {
+    logoEl.src = data.logoUrl;
+    logoEl.style.display = 'block';
+    logoEl.onerror = () => { logoEl.style.display = 'none'; };
+  }
+
+  if (nameEl && data.title) nameEl.textContent = data.title;
+
+  // Attribution link
+  if (attrEl && linkEl && data.pageUrl) {
+    linkEl.href = data.pageUrl;
+    attrEl.style.display = 'flex';
+  }
+}
 
 async function lookupTicker(companyName) {
   try {
@@ -2057,6 +2463,8 @@ async function openCompanyProfile(name) {
   const nameEl  = document.getElementById('company-name-display');
   const body    = document.getElementById('company-body');
 
+  currentWatchCompany = name;
+  syncWatchBtn();
   nameEl.textContent = name;
   body.innerHTML = `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">Loading…</div>`;
   panel.classList.add('open');
@@ -2119,6 +2527,19 @@ async function openCompanyProfile(name) {
         <a href="https://finance.yahoo.com" target="_blank"><img src="https://s.yimg.com/rz/p/yahoo_finance_en-US_h_p_finance_2.png" alt="Yahoo Finance"></a>
       </div>
     </div>
+    <div class="cp-section" id="cp-wiki-section">
+      <div id="cp-wiki-logo-wrap">
+        <img id="cp-wiki-company-logo" alt="" style="display:none">
+        <div id="cp-wiki-company-name-sub"></div>
+      </div>
+      <div id="cp-wiki-desc" style="font-size:9px;color:rgba(255,255,255,.2);font-family:'Share Tech Mono',monospace">Loading description…</div>
+      <div id="cp-wiki-attr" style="display:none">
+        <a id="cp-wiki-link" href="" target="_blank" rel="noopener">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/18px-Wikipedia-logo-v2.svg.png" alt="Wikipedia">
+        </a>
+        <span style="font-size:7px;color:rgba(255,255,255,.25);font-family:'Share Tech Mono',monospace;line-height:1.3;max-width:80px">auto-matched, may be incorrect</span>
+      </div>
+    </div>
     <div class="cp-section" id="cp-summary-section">
       ${renderCompanySummaryHtml(stats, false)}
     </div>
@@ -2129,6 +2550,9 @@ async function openCompanyProfile(name) {
       ${renderCompanyContractsHtml(stats)}
     </div>
   `;
+
+  // Fetch Wikipedia data
+  fetchWikiData(name).then(populateWikiSection);
 
   // Auto-detect ticker if not cached
   if (!cached) {
@@ -2693,6 +3117,19 @@ function clearSearch() {
 
 function applyFilter() {
   let cs = [...allContracts];
+
+  // NAICS filter
+  const naicsVal = document.getElementById('naics-filter-select')?.value || 'all';
+  if (naicsVal !== 'all') cs = cs.filter(c => (c['NAICS Code'] || '') === naicsVal);
+
+  // Timeline filter
+  if (timelineFilter) {
+    cs = cs.filter(c => {
+      const d = c['Last Modified Date'] || '';
+      return d >= timelineFilter.start && d <= timelineFilter.end;
+    });
+  }
+
   // Client-side sort only (API already filtered by query)
   cs.sort((a, b) => {
     if (sortMode === 'amount') return b._amt - a._amt;
@@ -2700,9 +3137,11 @@ function applyFilter() {
     return (a['Recipient Name'] || '').localeCompare(b['Recipient Name'] || '');
   });
   filtered = cs;
-  renderGlobe(filtered);
+
+  if (heatmapMode) renderHeatmap(filtered); else renderGlobe(filtered);
   renderSidebar(filtered);
   updateStats(filtered);
+  syncUrlState();
   if (viewer) viewer.scene.requestRender();
 }
 
@@ -2746,7 +3185,7 @@ async function fetchContracts() {
     'Awarding Agency','Awarding Sub Agency','Last Modified Date',
     'Place of Performance City Name','Place of Performance State Code',
     'Place of Performance Country Code','Place of Performance Country Name',
-    'generated_internal_id',
+    'generated_internal_id','NAICS Code','NAICS Description',
   ];
   const selectedKey = document.getElementById('agency-filter-select')?.value || 'dod';
   const agencyFilter = AGENCY_PRESETS[selectedKey];
@@ -2809,7 +3248,10 @@ async function loadData() {
       ...item, _id: item.generated_internal_id || String(i),
       _amt: parseFloat(item['Award Amount']) || 0,
     }));
+    populateNaicsDropdown();
+    initTimeline();
     applyFilter();
+    renderTopMovers();
     document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
     document.getElementById('loading').style.display = 'none';
   } else {
@@ -2856,6 +3298,8 @@ function hideTokenPrompt() {
 
 async function boot() {
   loadSettings(); // Apply saved settings before anything else
+  restoreFromUrl();
+  maybeShowDisclaimer();
   const token = localStorage.getItem('cesium_token');
   if (!token) { showTokenPrompt(); return; }
   document.getElementById('loading').style.display = 'flex';
@@ -2907,6 +3351,349 @@ document.getElementById('token-submit').addEventListener('click', async () => {
 document.getElementById('token-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('token-submit').click();
 });
+
+// ─── State variables for new features ─────────────────────────────────────────
+let heatmapMode = false;
+let timelineFilter = null;     // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } or null
+let heatmapEntities = [];
+let currentTab = 'list';       // 'list' | 'movers' | 'watch'
+let currentWatchCompany = null;
+
+// ─── Heatmap ──────────────────────────────────────────────────────────────────
+function toggleHeatmap() {
+  heatmapMode = !heatmapMode;
+  const btn = document.getElementById('heatmap-btn');
+  btn.classList.toggle('active', heatmapMode);
+  if (!heatmapMode) clearHeatmapEntities();
+  applyFilter();
+}
+
+function clearHeatmapEntities() {
+  if (!viewer) return;
+  heatmapEntities.forEach(e => viewer.entities.remove(e));
+  heatmapEntities = [];
+}
+
+function renderHeatmap(contracts) {
+  if (!viewer) return;
+  // Also render normal globe view
+  renderGlobe(contracts);
+
+  clearHeatmapEntities();
+  // Aggregate by country
+  const totals = {};
+  contracts.forEach(c => {
+    const code = c['Place of Performance Country Code'] || 'USA';
+    totals[code] = (totals[code] || 0) + c._amt;
+  });
+  const maxVal = Math.max(...Object.values(totals), 1);
+  const colorScale = v => {
+    const t = Math.sqrt(v / maxVal);
+    const r = Math.round(255 * t);
+    const g = Math.round(255 * (1 - t * 0.6));
+    return new Cesium.Color(r / 255, g / 255, 0.1, 0.45);
+  };
+  Object.entries(totals).forEach(([code, val]) => {
+    const coords = COUNTRY_COORDS[code];
+    if (!coords) return;
+    const e = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(coords[1], coords[0]),
+      ellipse: {
+        semiMajorAxis: 600000 + Math.sqrt(val / maxVal) * 900000,
+        semiMinorAxis: 600000 + Math.sqrt(val / maxVal) * 900000,
+        material: colorScale(val),
+        outline: false,
+      },
+      label: {
+        text: (code === 'USA' ? 'USA' : code) + '\n' + fmt$(val),
+        font: '9px Share Tech Mono',
+        fillColor: Cesium.Color.WHITE.withAlpha(0.8),
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(0, -20),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+    heatmapEntities.push(e);
+  });
+}
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+function toggleTimeline() {
+  const wrap = document.getElementById('timeline-wrap');
+  const btn  = document.getElementById('timeline-btn');
+  const isOpen = wrap.classList.toggle('visible');
+  btn.classList.toggle('active', isOpen);
+  if (!isOpen) { timelineFilter = null; applyFilter(); }
+}
+
+function initTimeline() {
+  if (!allContracts.length) return;
+  const dates = allContracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
+  const minDate = dates[0];
+  const maxDate = dates[dates.length - 1];
+  const slider = document.getElementById('timeline-slider');
+  document.getElementById('tl-start').textContent = minDate ? minDate.slice(0,7) : '—';
+  slider.min = 0;
+  slider.max = 100;
+  slider.value = 100;
+  timelineFilter = null;
+  document.getElementById('tl-value').textContent = 'All dates';
+  // Store range for scrub
+  slider._minDate = minDate;
+  slider._maxDate = maxDate;
+}
+
+function onTimelineScrub(val) {
+  const slider = document.getElementById('timeline-slider');
+  const minDate = slider._minDate, maxDate = slider._maxDate;
+  if (!minDate || !maxDate) return;
+  const minMs = new Date(minDate).getTime();
+  const maxMs = new Date(maxDate).getTime();
+  const cutMs = minMs + (val / 100) * (maxMs - minMs);
+  const cutDate = new Date(cutMs).toISOString().split('T')[0];
+  document.getElementById('tl-value').textContent = cutDate.slice(0,7);
+  if (parseInt(val) >= 100) {
+    timelineFilter = null;
+    document.getElementById('tl-value').textContent = 'All dates';
+  } else {
+    timelineFilter = { start: minDate, end: cutDate };
+  }
+  applyFilter();
+}
+
+// ─── NAICS dropdown ───────────────────────────────────────────────────────────
+function populateNaicsDropdown() {
+  const sel = document.getElementById('naics-filter-select');
+  const prev = sel.value;
+  const map = {};
+  allContracts.forEach(c => {
+    const code = c['NAICS Code'], desc = c['NAICS Description'];
+    if (code && !map[code]) map[code] = desc || code;
+  });
+  const codes = Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
+  sel.innerHTML = '<option value="all">All NAICS Codes</option>' +
+    codes.map(([c,d]) => `<option value="${c}">${c} – ${d ? d.slice(0,40) : '?'}</option>`).join('');
+  if (prev !== 'all' && map[prev]) sel.value = prev;
+
+  const row = document.getElementById('naics-filter-row');
+  row.style.display = codes.length ? 'block' : 'none';
+
+  // Restore URL-encoded NAICS selection
+  const restoreVal = sel.dataset.restoreVal;
+  if (restoreVal && map[restoreVal]) { sel.value = restoreVal; delete sel.dataset.restoreVal; }
+}
+
+document.getElementById('naics-filter-select').addEventListener('change', () => applyFilter());
+
+// ─── Sidebar tabs ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  ['list','movers','watch'].forEach(t => {
+    document.getElementById('stab-' + t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('contracts-list').style.display = tab === 'list' ? 'block' : 'none';
+  document.getElementById('top-movers').style.display = tab === 'movers' ? 'block' : 'none';
+  document.getElementById('watchlist-section').style.display = tab === 'watch' ? 'block' : 'none';
+  if (tab === 'movers') renderTopMovers();
+  if (tab === 'watch') renderWatchlist();
+}
+
+// ─── Top movers ───────────────────────────────────────────────────────────────
+function renderTopMovers() {
+  if (currentTab !== 'movers') return;
+  const el = document.getElementById('top-movers');
+  if (!allContracts.length) { el.innerHTML = '<div style="padding:20px;font-size:9px;color:rgba(255,255,255,.3)">No data</div>'; return; }
+  const byName = {};
+  allContracts.forEach(c => {
+    const n = c['Recipient Name'] || '—';
+    byName[n] = (byName[n] || 0) + c._amt;
+  });
+  const top = Object.entries(byName).sort((a,b) => b[1]-a[1]).slice(0,30);
+  const max = top[0]?.[1] || 1;
+  el.innerHTML = top.map(([name, amt], i) => {
+    const pct = Math.round(amt / max * 100);
+    const w = isWatched(name) ? '★' : '☆';
+    return `<div class="tm-row" onclick="openCompanyProfile(${JSON.stringify(name)})">
+      <div class="tm-rank">${i+1}</div>
+      <div class="tm-info">
+        <div class="tm-name">${name}</div>
+        <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin:3px 0">
+          <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;opacity:.7"></div>
+        </div>
+        <div class="tm-meta">${allContracts.filter(c=>c['Recipient Name']===name).length} contracts</div>
+      </div>
+      <div class="tm-amt">${fmt$(amt)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Watchlist ────────────────────────────────────────────────────────────────
+function getWatchlist() {
+  try { return JSON.parse(localStorage.getItem('gct_watchlist') || '[]'); } catch(e) { return []; }
+}
+function saveWatchlist(list) {
+  localStorage.setItem('gct_watchlist', JSON.stringify(list));
+}
+function isWatched(name) {
+  return getWatchlist().includes(name);
+}
+function toggleWatch() {
+  if (!currentWatchCompany) return;
+  const list = getWatchlist();
+  const idx = list.indexOf(currentWatchCompany);
+  if (idx >= 0) list.splice(idx, 1); else list.push(currentWatchCompany);
+  saveWatchlist(list);
+  syncWatchBtn();
+}
+function syncWatchBtn() {
+  const btn = document.getElementById('watch-btn');
+  if (!btn) return;
+  const watching = isWatched(currentWatchCompany);
+  btn.textContent = watching ? '★' : '☆';
+  btn.classList.toggle('watching', watching);
+  btn.title = watching ? 'Remove from watchlist' : 'Add to watchlist';
+}
+function renderWatchlist() {
+  const list = getWatchlist();
+  const container = document.getElementById('watchlist-list');
+  const countEl = document.getElementById('wl-count');
+  countEl.textContent = list.length ? `(${list.length})` : '';
+  if (!list.length) {
+    container.innerHTML = '<div style="padding:12px 14px;font-size:9px;color:rgba(255,255,255,.3)">No companies watched yet.</div>';
+    return;
+  }
+  container.innerHTML = list.map(name => {
+    const total = allContracts.filter(c => c['Recipient Name'] === name).reduce((s,c) => s+c._amt, 0);
+    return `<div class="wl-row">
+      <span class="wl-star">★</span>
+      <span class="wl-name" onclick="openCompanyProfile(${JSON.stringify(name)})">${name}</span>
+      <span class="wl-amt">${total ? fmt$(total) : '—'}</span>
+      <button class="wl-remove" onclick="removeFromWatchlist(${JSON.stringify(name)})">✕</button>
+    </div>`;
+  }).join('');
+}
+function removeFromWatchlist(name) {
+  const list = getWatchlist().filter(n => n !== name);
+  saveWatchlist(list);
+  renderWatchlist();
+  if (currentWatchCompany === name) syncWatchBtn();
+}
+
+// ─── Agency profile panel ─────────────────────────────────────────────────────
+function openAgencyProfile(agencyName) {
+  const panel   = document.getElementById('agency-panel');
+  const nameEl  = document.getElementById('agency-name-display');
+  const body    = document.getElementById('agency-body');
+  nameEl.textContent = agencyName;
+  panel.classList.add('open');
+
+  const contracts = allContracts.filter(c =>
+    (c['Awarding Agency'] || '') === agencyName ||
+    (c['Awarding Sub Agency'] || '') === agencyName
+  );
+  const totalAmt = contracts.reduce((s,c) => s+c._amt, 0);
+
+  // Top recipients
+  const byRecip = {};
+  contracts.forEach(c => { const n=c['Recipient Name']||'—'; byRecip[n]=(byRecip[n]||0)+c._amt; });
+  const topRecip = Object.entries(byRecip).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxAmt = topRecip[0]?.[1]||1;
+
+  body.innerHTML = `
+    <div class="cp-section">
+      <div class="cp-kv-grid">
+        <div class="cp-kv"><span class="cp-kv-label">Total Value</span><span class="cp-kv-value t-${tier(totalAmt)}">${fmt$(totalAmt)}</span></div>
+        <div class="cp-kv"><span class="cp-kv-label">Contracts</span><span class="cp-kv-value">${contracts.length}</span></div>
+      </div>
+    </div>
+    <div class="cp-section">
+      <div class="cp-section-title">Top Recipients</div>
+      ${topRecip.map(([name,amt])=>{
+        const pct=Math.round(amt/maxAmt*100);
+        return `<div class="cp-agency-row" onclick="closeAgencyProfile();openCompanyProfile(${JSON.stringify(name)})">
+          <div class="cp-agency-label">
+            <span class="cp-agency-name" title="${name}">${name}</span>
+            <span class="cp-agency-amt">${fmt$(amt)}</span>
+          </div>
+          <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function closeAgencyProfile() {
+  document.getElementById('agency-panel').classList.remove('open');
+}
+
+// ─── Shareable URL state ──────────────────────────────────────────────────────
+function syncUrlState() {
+  const params = new URLSearchParams();
+  const agency = document.getElementById('agency-filter-select')?.value || 'dod';
+  if (agency !== 'dod') params.set('agency', agency);
+  if (query) params.set('q', query);
+  const naics = document.getElementById('naics-filter-select')?.value || 'all';
+  if (naics !== 'all') params.set('naics', naics);
+  if (heatmapMode) params.set('heatmap', '1');
+  const str = params.toString();
+  const newUrl = str ? location.pathname + '?' + str : location.pathname;
+  history.replaceState(null, '', newUrl);
+}
+
+function restoreFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const agency = params.get('agency');
+  const q = params.get('q');
+  const naics = params.get('naics');
+  const hm = params.get('heatmap');
+
+  if (agency) {
+    const sel = document.getElementById('agency-filter-select');
+    if (sel) sel.value = agency;
+  }
+  if (q) {
+    query = q;
+    const inp = document.getElementById('search-input');
+    if (inp) inp.value = q;
+  }
+  if (hm) heatmapMode = true;
+  // NAICS restored after data loads in populateNaicsDropdown
+  if (naics && naics !== 'all') {
+    const naicsSel = document.getElementById('naics-filter-select');
+    if (naicsSel) naicsSel.dataset.restoreVal = naics;
+  }
+}
+
+// ─── Keyboard shortcuts ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Ignore when typing in an input/textarea
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  const key = e.key.toUpperCase();
+  if (e.key === 'Escape') {
+    closeCompanyProfile();
+    closeAgencyProfile();
+    closeCountryProfile();
+    closeSettings();
+  } else if (key === 'R' && !e.ctrlKey && !e.metaKey) {
+    loadData();
+  } else if (key === 'S') {
+    openSettings();
+  } else if (e.key === '/') {
+    e.preventDefault();
+    document.getElementById('search-input').focus();
+  } else if (key === 'H') {
+    toggleHeatmap();
+  } else if (key === 'T') {
+    toggleTimeline();
+  }
+});
+
+// Show keyboard hint briefly on load
+setTimeout(() => {
+  const hint = document.getElementById('kb-hint');
+  if (hint) { hint.style.opacity = '1'; setTimeout(() => hint.style.opacity = '', 4000); }
+}, 2000);
 
 boot();
 </script>
