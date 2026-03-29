@@ -193,8 +193,14 @@
     #spin-btn.paused:hover { background: rgba(255,100,100,.18); box-shadow: 0 0 10px rgba(255,80,80,.3); }
 
     /* ── Stats bar ── */
-    #stats-bar {
+    #stat-daterange-bar {
       position: absolute; top: 62px; left: 20px; z-index: 10;
+      font-family: 'Share Tech Mono', monospace; font-size: 8px;
+      color: rgba(255,255,255,.3); letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    #stat-daterange-bar span { color: rgba(var(--accent-rgb), .55); }
+    #stats-bar {
+      position: absolute; top: 76px; left: 20px; z-index: 10;
       display: flex; gap: 10px; flex-wrap: wrap;
     }
     .stat-card {
@@ -1083,6 +1089,8 @@
     </div>
   </div>
 </div>
+
+<div id="stat-daterange-bar">DATA RANGE: <span id="stat-daterange">—</span></div>
 
 <div id="stats-bar">
   <div class="stat-card"><div class="stat-label">Contracts</div><div class="stat-value" id="stat-count">—</div></div>
@@ -2848,6 +2856,19 @@ function updateStats(contracts) {
   countUp(document.getElementById('stat-total'),     0, total,            v => fmt$(v));
   countUp(document.getElementById('stat-countries'), 0, ctries,           v => Math.round(v));
   countUp(document.getElementById('stat-max'),       0, maxAmt,           v => fmt$(v));
+
+  const days = DAY_PRESETS[CFG.daysIdx];
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - days);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const years = Math.floor(days / 365);
+  const months = Math.round((days % 365) / 30);
+  const duration = years > 0
+    ? (months > 0 ? `${years}yr ${months}mo` : `${years}yr`)
+    : `${months}mo`;
+  const el = document.getElementById('stat-daterange');
+  if (el) el.textContent = fmt(start) + ' – ' + fmt(end) + ' (' + duration + ')';
 }
 
 function focusContract(id) {
