@@ -1670,6 +1670,24 @@
         </div>
 
         <div class="s-row">
+          <span class="s-label">Show &lt;$10M nodes <span style="font-size:7px;opacity:.5;color:#44ffcc">blue</span></span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-showSmallNodes" checked onchange="updateSetting('showSmallNodes', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="s-row s-slider-row">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+            <span class="s-label">Node render cap</span>
+            <span class="s-val" id="sv-nodeCap">All</span>
+          </div>
+          <input type="range" id="si-nodeCap" min="0" max="5000" step="50" value="0"
+            oninput="updateSlider('nodeCap', this.value)" style="width:100%;margin-top:6px">
+          <div class="s-ticks"><span>All</span><span>1,000</span><span>2,500</span><span>5,000</span></div>
+        </div>
+
+        <div class="s-row">
           <span class="s-label">Show agency hubs</span>
           <label class="s-toggle">
             <input type="checkbox" id="si-hubs" checked onchange="updateSetting('hubs', this.checked)">
@@ -2129,6 +2147,8 @@ const DEFAULT_SETTINGS = {
   bloom: false,
   bloomStrength: 2,
   showStars: true,
+  showSmallNodes: true,
+  nodeRenderCap: 0,
 };
 let CFG = { ...DEFAULT_SETTINGS };
 let refreshTimer = null;
@@ -2268,6 +2288,8 @@ function syncSettingsUI() {
   setCheck('si-bloom', CFG.bloom);
   set('si-bloomStrength', CFG.bloomStrength);
   setCheck('si-showStars', CFG.showStars);
+  setCheck('si-showSmallNodes', CFG.showSmallNodes);
+  set('si-nodeCap', CFG.nodeRenderCap);
   const bloomRow = document.getElementById('si-bloomStrength-row');
   if (bloomRow) bloomRow.style.display = CFG.bloom ? '' : 'none';
   // Display values
@@ -2286,6 +2308,7 @@ function updateDisplayValues() {
   if (el('sv-arcOpacity'))     el('sv-arcOpacity').textContent     = CFG.arcOpacity + '%';
   if (el('sv-textScale'))      el('sv-textScale').textContent      = CFG.textScale + '%';
   if (el('sv-bloomStrength'))  el('sv-bloomStrength').textContent  = CFG.bloomStrength;
+  if (el('sv-nodeCap'))        el('sv-nodeCap').textContent        = CFG.nodeRenderCap === 0 ? 'All' : CFG.nodeRenderCap.toLocaleString();
 }
 
 function applyExperimental(on) {
@@ -2321,11 +2344,13 @@ function updateSlider(key, rawVal) {
   if (key === 'arcOpacity')   { CFG.arcOpacity = v;     }
   if (key === 'bloomStrength'){ CFG.bloomStrength = parseFloat(rawVal); applyGlobeFX(); }
   if (key === 'textScale')  { CFG.textScale = v;  }
+  if (key === 'nodeCap')    { CFG.nodeRenderCap = v; }
   updateDisplayValues();
   saveSettings();
   // Live-apply non-fetch settings immediately
   if (key === 'rotation' || key === 'arcOpacity') applyLiveSettings();
   if (key === 'textScale') applyTextScale();
+  if (key === 'nodeCap') { if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); } }
 }
 
 function updateSetting(key, val) {
@@ -2343,7 +2368,8 @@ function updateSetting(key, val) {
   if (key === 'lowPerfGlobe') { CFG.lowPerfGlobe = !!val;  applyGlobeQuality(!!val); }
   if (key === 'globeLighting') { CFG.globeLighting = !!val; applyGlobeFX(); }
   if (key === 'bloom')         { CFG.bloom = !!val;         applyGlobeFX(); const r = document.getElementById('si-bloomStrength-row'); if(r) r.style.display = val ? '' : 'none'; }
-  if (key === 'showStars')     { CFG.showStars = !!val;     applyGlobeFX(); }
+  if (key === 'showStars')      { CFG.showStars = !!val;      applyGlobeFX(); }
+  if (key === 'showSmallNodes') { CFG.showSmallNodes = !!val; if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); } }
   saveSettings();
 }
 
@@ -2592,6 +2618,10 @@ async function initCesium(token) {
 // ─── Render globe ─────────────────────────────────────────────────────────────
 function renderGlobe(contracts) {
   if (!viewer) return;
+
+  // Apply display-only filters (don't affect sidebar/stats)
+  if (!CFG.showSmallNodes) contracts = contracts.filter(c => c._amt >= 1e7);
+  if (CFG.nodeRenderCap > 0) contracts = contracts.slice(0, CFG.nodeRenderCap);
 
   // Clear previous points, arcs, and country labels
   pointCollection.removeAll();
