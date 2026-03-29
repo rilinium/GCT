@@ -399,6 +399,42 @@
     .t-medium { color: #ffcc44; text-shadow: 0 0 8px rgba(255,204,68,.4); }
     .t-small  { color: #44ffcc; text-shadow: 0 0 6px rgba(68,255,204,.4); }
 
+    /* ── Country Profile Panel ── */
+    #country-panel {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
+      background: linear-gradient(180deg, rgba(0,4,18,.98) 0%, rgba(0,2,12,.98) 100%);
+      border-left: 1px solid rgba(var(--accent-rgb),.25);
+      backdrop-filter: blur(18px); z-index: 21;
+      display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    #country-panel.open { transform: translateX(0); }
+    #country-panel-header {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid rgba(var(--accent-rgb),.1);
+      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+    }
+    #country-back-btn {
+      background: none; border: 1px solid rgba(var(--accent-rgb),.2);
+      color: var(--accent); font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      padding: 4px 8px; border-radius: 3px; cursor: pointer; letter-spacing: 1px;
+      flex-shrink: 0; transition: background .15s;
+    }
+    #country-back-btn:hover { background: rgba(var(--accent-rgb),.1); }
+    #country-flag-display { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    #country-name-display {
+      font-family: 'Orbitron', monospace; font-size: 9px; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      text-shadow: 0 0 8px rgba(var(--accent-rgb),.4); flex: 1;
+    }
+    #country-body { flex: 1; overflow-y: auto; }
+    #country-body::-webkit-scrollbar { width: 2px; }
+    #country-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
+    .ctp-recipient-row { padding: 6px 0; border-bottom: 1px solid rgba(var(--accent-rgb),.04); cursor: pointer; }
+    .ctp-recipient-row:hover { background: rgba(var(--accent-rgb),.06); margin: 0 -14px; padding: 6px 14px; }
+    .ctp-recipient-name { font-size: 10px; color: rgba(255,255,255,.8); font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* ── Loading ── */
     #loading {
       position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -902,6 +938,16 @@
   <div id="company-body"></div>
 </div>
 
+<!-- Country Profile Panel -->
+<div id="country-panel">
+  <div id="country-panel-header">
+    <button id="country-back-btn" onclick="closeCountryProfile()">← Back</button>
+    <div id="country-flag-display">🌐</div>
+    <div id="country-name-display">—</div>
+  </div>
+  <div id="country-body"></div>
+</div>
+
 <div id="tooltip">
   <h3 id="tt-name"></h3>
   <div class="tt-row"><span class="tt-lbl">Amount</span><span class="tt-val" id="tt-amount"></span></div>
@@ -1139,6 +1185,32 @@ const COUNTRY_COORDS = {
   COL:[4.57,-74.30],ARG:[-38.42,-63.62],CHL:[-35.68,-71.54],UKR:[48.38,31.17],
   JOR:[30.59,36.24],OMN:[21.47,55.97],TWN:[23.70,120.96],HKG:[22.32,114.17],
 };
+
+const ALPHA3_TO_2 = {
+  USA:'US',GBR:'GB',DEU:'DE',FRA:'FR',ITA:'IT',ESP:'ES',JPN:'JP',KOR:'KR',
+  AUS:'AU',CAN:'CA',MEX:'MX',BRA:'BR',IND:'IN',CHN:'CN',RUS:'RU',SAU:'SA',
+  ISR:'IL',ARE:'AE',TUR:'TR',POL:'PL',NLD:'NL',BEL:'BE',SWE:'SE',NOR:'NO',
+  DNK:'DK',CHE:'CH',AUT:'AT',PRT:'PT',GRC:'GR',NZL:'NZ',ZAF:'ZA',EGY:'EG',
+  NGA:'NG',THA:'TH',PHL:'PH',IDN:'ID',MYS:'MY',SGP:'SG',PAK:'PK',IRQ:'IQ',
+  COL:'CO',ARG:'AR',CHL:'CL',UKR:'UA',JOR:'JO',OMN:'OM',TWN:'TW',HKG:'HK',
+};
+const COUNTRY_NAMES = {
+  USA:'United States',GBR:'United Kingdom',DEU:'Germany',FRA:'France',
+  ITA:'Italy',ESP:'Spain',JPN:'Japan',KOR:'South Korea',AUS:'Australia',
+  CAN:'Canada',MEX:'Mexico',BRA:'Brazil',IND:'India',CHN:'China',
+  RUS:'Russia',SAU:'Saudi Arabia',ISR:'Israel',ARE:'UAE',TUR:'Turkey',
+  POL:'Poland',NLD:'Netherlands',BEL:'Belgium',SWE:'Sweden',NOR:'Norway',
+  DNK:'Denmark',CHE:'Switzerland',AUT:'Austria',PRT:'Portugal',GRC:'Greece',
+  NZL:'New Zealand',ZAF:'South Africa',EGY:'Egypt',NGA:'Nigeria',
+  THA:'Thailand',PHL:'Philippines',IDN:'Indonesia',MYS:'Malaysia',
+  SGP:'Singapore',PAK:'Pakistan',IRQ:'Iraq',COL:'Colombia',ARG:'Argentina',
+  CHL:'Chile',UKR:'Ukraine',JOR:'Jordan',OMN:'Oman',TWN:'Taiwan',HKG:'Hong Kong',
+};
+function countryFlag(alpha2) {
+  if (!alpha2 || alpha2.length !== 2) return '🌐';
+  const base = 0x1F1E6 - 65;
+  return String.fromCodePoint(base + alpha2.charCodeAt(0)) + String.fromCodePoint(base + alpha2.charCodeAt(1));
+}
 
 const AGENCY_RULES = [
   ['darpa',38.8785,-77.1092,'DARPA — Arlington, VA'],
@@ -1485,6 +1557,7 @@ function resetSettings() {
 let viewer = null;
 let pointCollection = null;
 let polylineCollection = null;
+let labelCollection = null;
 let allContracts = [];
 let filtered = [];
 let activeId = null;
@@ -1560,9 +1633,10 @@ async function initCesium(token) {
     orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
   });
 
-  // Primitives for dots and arcs
+  // Primitives for dots, arcs, and country labels
   pointCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
   polylineCollection = viewer.scene.primitives.add(new Cesium.PolylineCollection());
+  labelCollection = viewer.scene.primitives.add(new Cesium.LabelCollection());
 
   // Auto-rotation — self-sustaining under requestRenderMode
   viewer.scene.postUpdate.addEventListener(() => {
@@ -1596,8 +1670,21 @@ async function initCesium(token) {
   const evtHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   evtHandler.setInputAction(m => {
     const p = viewer.scene.pick(m.endPosition);
-    if (Cesium.defined(p) && p.id && p.id._cdata) showTooltip(p.id._cdata);
-    else hideTooltip();
+    if (Cesium.defined(p) && p.id && p.id._cdata) {
+      const d = p.id._cdata;
+      if (d.isCountry) {
+        showTooltip({
+          recipient: countryFlag(ALPHA3_TO_2[d.countryCode]) + ' ' + (COUNTRY_NAMES[d.countryCode] || d.countryCode),
+          amount: d.amount,
+          agency: `${d.count.toLocaleString()} contracts`,
+          loc: '', date: '', desc: 'Click to view country profile',
+        });
+      } else {
+        showTooltip(d);
+      }
+    } else {
+      hideTooltip();
+    }
   }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
   // Click
@@ -1605,6 +1692,7 @@ async function initCesium(token) {
     const p = viewer.scene.pick(m.position);
     if (Cesium.defined(p) && p.id && p.id._cdata) {
       const d = p.id._cdata;
+      if (d.isCountry) { openCountryProfile(d.countryCode); return; }
       showDetail(d);
       if (d.contractId) focusContract(d.contractId);
       autoRotate = false; scheduleRotateResume();
@@ -1618,9 +1706,10 @@ async function initCesium(token) {
 function renderGlobe(contracts) {
   if (!viewer) return;
 
-  // Clear previous points and arcs
+  // Clear previous points, arcs, and country labels
   pointCollection.removeAll();
   polylineCollection.removeAll();
+  labelCollection.removeAll();
 
   // Spread overlapping contract dots (cap O(n²) to first 300)
   const pts = contracts.map(c => {
@@ -1713,6 +1802,33 @@ function renderGlobe(contracts) {
       });
     });
   }
+
+  // Country flag emoji labels — one per country with contracts
+  const countryMap = new Map();
+  contracts.forEach(c => {
+    const cc = c['Place of Performance Country Code'];
+    if (!cc || !COUNTRY_COORDS[cc]) return;
+    if (!countryMap.has(cc)) countryMap.set(cc, { total: 0, count: 0 });
+    const e = countryMap.get(cc); e.total += c._amt; e.count++;
+  });
+  countryMap.forEach((entry, cc) => {
+    const [lat, lng] = COUNTRY_COORDS[cc];
+    const flag = countryFlag(ALPHA3_TO_2[cc]);
+    const name = (COUNTRY_NAMES[cc] || cc).toUpperCase();
+    const lbl = labelCollection.add({
+      position: Cesium.Cartesian3.fromDegrees(lng, lat, 80000),
+      text: name,
+      font: 'bold 18px "Share Tech Mono", monospace',
+      fillColor: Cesium.Color.WHITE,
+      outlineColor: Cesium.Color.BLACK,
+      outlineWidth: 3,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+      verticalOrigin: Cesium.VerticalOrigin.CENTER,
+      scaleByDistance: new Cesium.NearFarScalar(8e5, 1.2, 2e7, 0.9),
+    });
+    lbl.id = { _cdata: { isCountry: true, countryCode: cc, amount: entry.total, count: entry.count } };
+  });
 }
 
 // ─── Cached Cesium colors (avoids CSS string parsing per-point) ───────────────
@@ -1799,7 +1915,7 @@ function buildCompanyStats(name, contractList) {
   return { name, contracts, total, agencies: agencySorted, dateRange };
 }
 
-async function fetchCompanyContracts(name) {
+async function fetchCompanyContracts(name, onProgress) {
   const end = new Date(), start = new Date('2007-10-01');
   const fmt = d => d.toISOString().split('T')[0];
   const fields = [
@@ -1823,7 +1939,7 @@ async function fetchCompanyContracts(name) {
   };
   // Fetch in parallel batches of 10 pages; stop if a batch returns any short page
   const all = [];
-  const BATCH = 10, MAX_PAGES = 100;
+  const BATCH = 10, MAX_PAGES = 500;
   for (let batch = 0; batch < MAX_PAGES / BATCH; batch++) {
     const pages = Array.from({ length: BATCH }, (_, i) => batch * BATCH + i + 1);
     const results = await Promise.all(pages.map(fetchPage));
@@ -1832,6 +1948,7 @@ async function fetchCompanyContracts(name) {
       r._amt = parseFloat(r['Award Amount']) || 0;
     });
     all.push(...results.flat());
+    if (onProgress) onProgress(all.length);
     if (results.some(r => r.length < 100)) break;
   }
   return all;
@@ -1903,8 +2020,19 @@ function renderCompanyContractsHtml(stats) {
 async function loadAllCompanyContracts(name) {
   const btn = document.querySelector('.cp-load-all-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  // Insert progress line below button
+  let progEl = document.getElementById('cp-api-progress');
+  if (!progEl) {
+    progEl = document.createElement('div');
+    progEl.id = 'cp-api-progress';
+    progEl.style.cssText = 'font-size:9px;color:rgba(255,255,255,.35);font-family:\'Share Tech Mono\',monospace;margin-top:6px;letter-spacing:.5px';
+    btn && btn.parentNode.insertBefore(progEl, btn.nextSibling);
+  }
   try {
-    const contracts = await fetchCompanyContracts(name);
+    const contracts = await fetchCompanyContracts(name, count => {
+      if (progEl) progEl.textContent = `${count.toLocaleString()} contracts loaded…`;
+    });
+    if (progEl) progEl.remove();
     const stats = buildCompanyStats(name, contracts);
     const summaryEl   = document.getElementById('cp-summary-section');
     const agenciesEl  = document.getElementById('cp-agencies-section');
@@ -2136,6 +2264,145 @@ async function switchChartRange(companyName, range, interval) {
 
 function closeCompanyProfile() {
   document.getElementById('company-panel').classList.remove('open');
+}
+
+// ─── Country Profile ──────────────────────────────────────────────────────────
+async function fetchCountryContracts(code, onProgress) {
+  const end = new Date(), start = new Date('2007-10-01');
+  const fmt = d => d.toISOString().split('T')[0];
+  const fields = [
+    'Award ID','Recipient Name','Award Amount','Description',
+    'Awarding Agency','Awarding Sub Agency','Last Modified Date',
+    'Place of Performance City Name','Place of Performance State Code',
+    'Place of Performance Country Code','Place of Performance Country Name',
+    'generated_internal_id',
+  ];
+  const filters = {
+    award_type_codes: ['A','B','C','D'],
+    time_period: [{ start_date: fmt(start), end_date: fmt(end) }],
+    place_of_performance_locations: [{ country: code }],
+  };
+  const fetchPage = async page => {
+    const res = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filters, fields, page, limit: 100, sort: 'Award Amount', order: 'desc' }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()).results || [];
+  };
+  const all = [];
+  const BATCH = 10, MAX_PAGES = 500;
+  for (let batch = 0; batch < MAX_PAGES / BATCH; batch++) {
+    const pages = Array.from({ length: BATCH }, (_, i) => batch * BATCH + i + 1);
+    const results = await Promise.all(pages.map(fetchPage));
+    results.flat().forEach(r => {
+      r._amt = parseFloat(r['Award Amount']) || 0;
+      r._id  = r['generated_internal_id'] || r['Award ID'];
+      all.push(r);
+    });
+    if (onProgress) onProgress(all.length);
+    if (results.some(r => r.length < 100)) break;
+  }
+  return all;
+}
+
+function renderCountryBody(body, contracts, fromApi, code) {
+  const total = contracts.reduce((s, c) => s + c._amt, 0);
+  const agencyMap = {};
+  contracts.forEach(c => { const ag = c['Awarding Agency'] || 'Unknown'; agencyMap[ag] = (agencyMap[ag] || 0) + c._amt; });
+  const agencies = Object.entries(agencyMap).sort((a, b) => b[1] - a[1]);
+  const maxAmt = agencies[0]?.[1] || 1;
+  const recipMap = {};
+  contracts.forEach(c => { const r = c['Recipient Name'] || 'Unknown'; recipMap[r] = (recipMap[r] || 0) + c._amt; });
+  const recipients = Object.entries(recipMap).sort((a, b) => b[1] - a[1]).slice(0, 20);
+  const dates = contracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
+  const dateRange = dates.length ? `${dates[0].slice(0,10)} → ${dates[dates.length-1].slice(0,10)}` : '—';
+
+  const agencyRows = agencies.slice(0, 8).map(([ag, amt]) => {
+    const pct = Math.round((amt / maxAmt) * 100);
+    return `<div class="cp-agency-row">
+      <div class="cp-agency-label">
+        <span class="cp-agency-name" title="${ag}">${ag}</span>
+        <span class="cp-agency-amt">${fmt$(amt)}</span>
+      </div>
+      <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  const recipRows = recipients.map(([r, amt]) => `
+    <div class="ctp-recipient-row" onclick="closeCountryProfile();openCompanyProfile(${JSON.stringify(r)})">
+      <div class="cp-agency-label">
+        <span class="ctp-recipient-name" title="${r}">${r}</span>
+        <span class="cp-agency-amt">${fmt$(amt)}</span>
+      </div>
+    </div>`).join('');
+
+  const safeId = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const contractRows = contracts.slice(0, 50).map(c => `
+    <div class="cp-contract-row" onclick="closeCountryProfile()">
+      <div class="cp-c-top">
+        <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
+        <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
+      </div>
+      <div class="cp-c-agency">${c['Recipient Name'] || '—'}</div>
+      <div class="cp-c-agency" style="opacity:.6">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+    </div>`).join('');
+
+  const safeCode = code ? JSON.stringify(code) : 'null';
+  const sourceNote = fromApi
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From USASpending API · Since Oct 2007</div>`
+    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset</div>
+       <button class="cp-load-all-btn" id="ctp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
+       <div id="ctp-api-progress" style="font-size:9px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:6px;letter-spacing:.5px"></div>`;
+
+  body.innerHTML = `
+    <div class="cp-section">
+      <div class="cp-stats-grid">
+        <div class="cp-stat-box"><div class="cp-stat-label">Total Value</div><div class="cp-stat-value">${fmt$Html(total)}</div></div>
+        <div class="cp-stat-box"><div class="cp-stat-label">Contracts</div><div class="cp-stat-value">${contracts.length.toLocaleString()}</div></div>
+        <div class="cp-stat-box" style="grid-column:1/-1"><div class="cp-stat-label">Date Range</div><div class="cp-stat-value" style="font-size:9px;letter-spacing:1px">${dateRange}</div></div>
+      </div>
+      ${sourceNote}
+    </div>
+    <div class="cp-section"><div class="cp-section-title">Funding Agencies</div>${agencyRows}</div>
+    <div class="cp-section"><div class="cp-section-title">Top Recipients</div>${recipRows}</div>
+    <div class="cp-section"><div class="cp-section-title">Contracts (top ${Math.min(50, contracts.length)} of ${contracts.length.toLocaleString()})</div>${contractRows}</div>
+  `;
+}
+
+async function loadAllCountryContracts(code) {
+  const btn = document.getElementById('ctp-load-all-btn');
+  const prog = document.getElementById('ctp-api-progress');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try {
+    const contracts = await fetchCountryContracts(code, count => {
+      if (prog) prog.textContent = `${count.toLocaleString()} contracts loaded…`;
+    });
+    if (prog) prog.remove();
+    const body = document.getElementById('country-body');
+    if (body) renderCountryBody(body, contracts, true);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ Load All from API'; }
+    if (prog) prog.textContent = 'Failed: ' + e.message;
+  }
+}
+
+function openCountryProfile(code) {
+  const panel  = document.getElementById('country-panel');
+  const nameEl = document.getElementById('country-name-display');
+  const flagEl = document.getElementById('country-flag-display');
+  const body   = document.getElementById('country-body');
+
+  flagEl.textContent = countryFlag(ALPHA3_TO_2[code]);
+  nameEl.textContent = COUNTRY_NAMES[code] || code;
+  panel.classList.add('open');
+
+  // Show data from current filtered set immediately
+  const contracts = filtered.filter(c => c['Place of Performance Country Code'] === code);
+  renderCountryBody(body, contracts, false, code);
+}
+
+function closeCountryProfile() {
+  document.getElementById('country-panel').classList.remove('open');
 }
 
 function countUp(el, from, to, fmt, ms = 600) {
