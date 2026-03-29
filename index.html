@@ -4221,8 +4221,11 @@ async function loadData() {
     }));
 
     if (isSearch) {
-      // Search results: display only, never touch the cache
-      allContracts = incoming;
+      // Merge search results into globe and persist to cache so they stick
+      const incomingIds = new Set(incoming.map(r => r._id));
+      allContracts = [...incoming, ...allContracts.filter(r => !incomingIds.has(r._id))];
+      if (!db) try { db = await getDB(); } catch (e) {}
+      if (db) try { await cachePut(incoming); } catch (e) { console.warn('Cache write failed:', e); }
     } else if (isFullMiss) {
       // Replace stale/absent cache for this agency scope
       if (db) try { await cacheClearAgency(agencyKey); await cachePut(incoming); } catch (e) { console.warn('Cache write failed:', e); }
