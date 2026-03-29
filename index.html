@@ -35,6 +35,10 @@
     :root {
       --accent: #00ff88;
       --accent-rgb: 0, 255, 136;
+      --accent-glow: rgba(0,255,136,.4);
+      --accent-border: rgba(0,255,136,.25);
+      --bg-base: 0, 4, 18;
+      --bg-deep: 0, 2, 12;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; color: #fff; font-family: 'Share Tech Mono', 'Courier New', monospace; overflow: hidden; height: 100vh; }
@@ -148,7 +152,7 @@
         border-top: 1px solid rgba(var(--accent-rgb), .35) !important;
         border-radius: 14px 14px 0 0 !important;
         z-index: 20 !important;
-        background: rgba(0,4,18,.96) !important;
+        background: rgba(var(--bg-base),.96) !important;
         box-shadow: 0 -8px 40px rgba(0,0,0,.7) !important;
         padding-bottom: env(safe-area-inset-bottom) !important;
       }
@@ -290,7 +294,7 @@
       display: flex; gap: 10px; flex-wrap: wrap;
     }
     .stat-card {
-      background: rgba(0,8,24,.9); border: 1px solid rgba(var(--accent-rgb),.2);
+      background: rgba(var(--bg-base),.9); border: 1px solid rgba(var(--accent-rgb),.2);
       border-radius: 4px; padding: 8px 16px; backdrop-filter: blur(14px); min-width: 105px;
       position: relative; overflow: hidden;
       animation: pulse-glow 4s ease-in-out infinite;
@@ -311,7 +315,7 @@
     /* ── Sidebar ── */
     #sidebar {
       position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
-      background: linear-gradient(180deg, rgba(0,4,18,.97) 0%, rgba(0,2,12,.97) 100%);
+      background: linear-gradient(180deg, rgba(var(--bg-base),.97) 0%, rgba(var(--bg-deep),.97) 100%);
       border-left: 1px solid rgba(var(--accent-rgb),.15);
       backdrop-filter: blur(18px); z-index: 10; display: flex; flex-direction: column;
     }
@@ -386,7 +390,7 @@
     /* ── Company Profile Panel ── */
     #company-panel {
       position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
-      background: linear-gradient(180deg, rgba(0,4,18,.98) 0%, rgba(0,2,12,.98) 100%);
+      background: linear-gradient(180deg, rgba(var(--bg-base),.98) 0%, rgba(var(--bg-deep),.98) 100%);
       border-left: 1px solid rgba(var(--accent-rgb),.25);
       backdrop-filter: blur(18px); z-index: 20;
       display: flex; flex-direction: column;
@@ -509,6 +513,11 @@
     .cp-c-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
     .cp-c-agency { font-size: 8px; color: rgba(255,255,255,.4); font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
     .cp-c-date { font-size: 8px; color: rgba(255,255,255,.3); flex-shrink: 0; margin-left: 8px; }
+    .cp-c-meta { font-size: 8px; color: rgba(255,255,255,.35); font-family: 'Share Tech Mono', monospace; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cp-info-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(var(--accent-rgb),.04); font-family: 'Share Tech Mono', monospace; }
+    .cp-info-row:last-child { border-bottom: none; }
+    .cp-info-label { font-size: 7px; color: rgba(var(--accent-rgb),.6); letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; min-width: 40px; }
+    .cp-info-val { font-size: 9px; color: rgba(255,255,255,.75); word-break: break-word; }
     .c-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
     .c-amount { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; }
     .c-location { font-size: 9px; color: #446655; }
@@ -522,7 +531,7 @@
     /* ── Country Profile Panel ── */
     #country-panel {
       position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
-      background: linear-gradient(180deg, rgba(0,4,18,.98) 0%, rgba(0,2,12,.98) 100%);
+      background: linear-gradient(180deg, rgba(var(--bg-base),.98) 0%, rgba(var(--bg-deep),.98) 100%);
       border-left: 1px solid rgba(var(--accent-rgb),.25);
       backdrop-filter: blur(18px); z-index: 21;
       display: flex; flex-direction: column;
@@ -558,7 +567,7 @@
     /* ── Agency Profile Panel ── */
     #agency-panel {
       position: absolute; right: 0; top: 0; bottom: 0; width: 320px;
-      background: linear-gradient(180deg, rgba(0,4,18,.98) 0%, rgba(0,2,12,.98) 100%);
+      background: linear-gradient(180deg, rgba(var(--bg-base),.98) 0%, rgba(var(--bg-deep),.98) 100%);
       border-left: 1px solid rgba(var(--accent-rgb),.25);
       backdrop-filter: blur(18px); z-index: 22;
       display: flex; flex-direction: column;
@@ -704,11 +713,119 @@
       font-family: 'Orbitron', monospace; font-size: 10px; color: var(--accent);
       letter-spacing: 4px; text-transform: uppercase;
       text-shadow: 0 0 10px rgba(var(--accent-rgb),.7); animation: blink 1.5s ease-in-out infinite;
+      margin-bottom: 18px;
+    }
+    #loading-bar-wrap {
+      width: 200px; height: 2px; background: rgba(var(--accent-rgb),.12);
+      border-radius: 2px; overflow: hidden;
+    }
+    #loading-bar-fill {
+      height: 100%; width: 5%; background: var(--accent);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb),.8);
+      border-radius: 2px;
+      transition: width .4s cubic-bezier(.4,0,.2,1);
+    }
+    #loading-sub {
+      margin-top: 10px; font-family: 'Share Tech Mono', monospace;
+      font-size: 8px; color: rgba(var(--accent-rgb),.45); letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    #loading-error {
+      margin-top: 14px; font-family: 'Share Tech Mono', monospace;
+      font-size: 9px; color: #ff4455; letter-spacing: 1px;
+      text-shadow: 0 0 8px rgba(255,40,60,.5);
+      max-width: 280px; text-align: center; line-height: 1.6;
+      display: none;
     }
 
+    /* ── Admin panel ── */
+    #admin-modal {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,10,.88); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #admin-modal.open { display: flex; }
+    #admin-panel {
+      width: 420px; max-height: 82vh; overflow-y: auto;
+      background: rgb(var(--bg-deep)); border: 1px solid rgba(var(--accent-rgb),.35);
+      border-radius: 6px; padding: 22px 20px;
+      font-family: 'Share Tech Mono', monospace;
+      box-shadow: 0 0 40px rgba(var(--accent-rgb),.12);
+    }
+    #admin-panel h2 {
+      font-family: 'Orbitron', monospace; font-size: 11px; color: var(--accent);
+      letter-spacing: 3px; text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(var(--accent-rgb),.5);
+      margin: 0 0 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .admin-close {
+      margin-left: auto; background: none; border: none; color: rgba(var(--accent-rgb),.4);
+      font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1;
+    }
+    .admin-close:hover { color: var(--accent); }
+    .admin-section { margin-bottom: 20px; }
+    .admin-section-title {
+      font-size: 7px; color: rgba(var(--accent-rgb),.5); letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .admin-section-title::after { content:''; flex:1; height:1px; background:rgba(var(--accent-rgb),.1); }
+    .admin-field { margin-bottom: 10px; }
+    .admin-label { font-size: 7px; color: rgba(var(--accent-rgb),.5); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .admin-input {
+      width: 100%; box-sizing: border-box;
+      background: rgba(var(--accent-rgb),.05); border: 1px solid rgba(var(--accent-rgb),.2);
+      color: rgba(255,255,255,.85); font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      padding: 6px 8px; border-radius: 3px; outline: none;
+    }
+    .admin-input:focus { border-color: var(--accent); }
+    textarea.admin-input { resize: vertical; min-height: 70px; line-height: 1.55; }
+    .admin-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .admin-btn {
+      padding: 6px 14px; border-radius: 3px; cursor: pointer;
+      font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px;
+      border: 1px solid rgba(var(--accent-rgb),.25); background: rgba(var(--accent-rgb),.08);
+      color: var(--accent); transition: background .15s;
+    }
+    .admin-btn:hover { background: rgba(var(--accent-rgb),.18); }
+    .admin-btn.danger { border-color: rgba(255,60,80,.4); background: rgba(255,60,80,.07); color: #ff4455; }
+    .admin-btn.danger:hover { background: rgba(255,60,80,.15); }
+    .admin-status { font-size: 8px; margin-top: 8px; letter-spacing: 1px; min-height: 14px; }
+    .admin-status.ok  { color: var(--accent); }
+    .admin-status.err { color: #ff4455; }
+    .admin-ovr-row {
+      display: flex; align-items: flex-start; gap: 8px; padding: 7px 0;
+      border-bottom: 1px solid rgba(var(--accent-rgb),.06); font-size: 9px;
+    }
+    .admin-ovr-name { color: rgba(255,255,255,.7); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .admin-ovr-tags { display: flex; gap: 4px; flex-shrink: 0; }
+    .admin-ovr-tag { font-size: 7px; padding: 2px 5px; border-radius: 2px; letter-spacing: .5px; }
+    .admin-ovr-tag.ticker { background: rgba(var(--accent-rgb),.12); color: var(--accent); }
+    .admin-ovr-tag.desc   { background: rgba(180,140,255,.1); color: #c090ff; }
+    .admin-ovr-edit { font-size: 9px; color: rgba(var(--accent-rgb),.5); cursor: pointer; flex-shrink:0; }
+    .admin-ovr-edit:hover { color: var(--accent); }
+    #admin-login-err { font-size: 8px; color: #ff4455; margin-top: 8px; min-height: 14px; letter-spacing: 1px; }
+    .admin-edit-btn {
+      padding: 2px 7px; border-radius: 2px; cursor: pointer;
+      font-family: 'Share Tech Mono', monospace; font-size: 7px; letter-spacing: 1px;
+      border: 1px solid rgba(var(--accent-rgb),.2); background: rgba(var(--accent-rgb),.06);
+      color: rgba(var(--accent-rgb),.7); transition: all .15s; flex-shrink: 0;
+    }
+    .admin-edit-btn:hover { background: rgba(var(--accent-rgb),.14); color: var(--accent); }
+    #admin-badge {
+      position: fixed; bottom: 12px; right: 12px; z-index: 300;
+      font-family: 'Share Tech Mono', monospace; font-size: 7px; letter-spacing: 2px;
+      color: rgba(var(--accent-rgb),.4); cursor: pointer; padding: 4px 8px;
+      border: 1px solid rgba(var(--accent-rgb),.12); border-radius: 3px;
+      background: rgba(var(--bg-deep),0.8); backdrop-filter: blur(4px);
+      text-transform: uppercase; transition: all .15s; display: none;
+    }
+    #admin-badge:hover { color: var(--accent); border-color: rgba(var(--accent-rgb),.35); }
+    #admin-badge.active { color: var(--accent); border-color: rgba(var(--accent-rgb),.4); display: block; }
+    /* Tooltip ── */
     /* ── Tooltip ── */
     #tooltip {
-      position: fixed; background: rgba(0,6,20,.97); border: 1px solid rgba(var(--accent-rgb),.45);
+      position: fixed; background: rgba(var(--bg-base),.97); border: 1px solid rgba(var(--accent-rgb),.45);
       border-radius: 4px; padding: 11px 14px; z-index: 50; pointer-events: none;
       max-width: 270px; backdrop-filter: blur(16px); display: none;
       box-shadow: 0 0 20px rgba(var(--accent-rgb),.15), inset 0 0 20px rgba(var(--accent-rgb),.03);
@@ -721,7 +838,7 @@
     /* ── Detail Panel ── */
     #detail-panel {
       position: fixed; bottom: 0; left: 0; right: 320px;
-      background: rgba(0,4,16,.98); border-top: 1px solid rgba(var(--accent-rgb),.3);
+      background: rgba(var(--bg-deep),.98); border-top: 1px solid rgba(var(--accent-rgb),.3);
       z-index: 30; padding: 16px 24px 18px;
       backdrop-filter: blur(20px);
       transform: translateY(100%);
@@ -845,7 +962,7 @@
     }
     #token-overlay.visible { display: flex; }
     #token-prompt {
-      background: rgba(0,4,18,.98); border: 1px solid rgba(var(--accent-rgb),.35);
+      background: rgba(var(--bg-base),.98); border: 1px solid rgba(var(--accent-rgb),.35);
       border-radius: 6px; padding: 32px 36px; z-index: 81; width: 480px; max-width: 95vw;
       backdrop-filter: blur(20px);
       box-shadow: 0 0 60px rgba(var(--accent-rgb),.12), 0 0 0 1px rgba(var(--accent-rgb),.06);
@@ -920,7 +1037,7 @@
 
     #settings-panel {
       position: absolute; top: 0; left: 0; bottom: 0; width: 320px;
-      background: rgba(0,6,20,.97); border-right: 1px solid var(--accent-border);
+      background: rgba(var(--bg-base),.97); border-right: 1px solid var(--accent-border);
       transform: translateX(-100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
       display: flex; flex-direction: column; overflow: hidden;
       box-shadow: 4px 0 40px rgba(0,0,0,.8);
@@ -1025,6 +1142,18 @@
     .s-select option { background: #000d1f; }
 
     /* Color swatches */
+    #theme-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .theme-btn {
+      padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 9px;
+      font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; text-transform: uppercase;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.5); transition: all .15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .theme-btn:hover { border-color: rgba(255,255,255,.25); color: rgba(255,255,255,.8); background: rgba(255,255,255,.07); }
+    .theme-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb),.08); }
+    .theme-btn .theme-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
     #accent-swatches { display: flex; gap: 8px; flex-wrap: wrap; }
     .accent-swatch {
       width: 28px; height: 28px; border-radius: 4px; cursor: pointer;
@@ -1067,7 +1196,7 @@
     }
     #disclaimer-overlay.visible { display: flex; }
     #disclaimer-modal {
-      background: rgba(0,4,18,.98); border: 1px solid rgba(255,200,0,.35);
+      background: rgba(var(--bg-base),.98); border: 1px solid rgba(255,200,0,.35);
       border-radius: 6px; padding: 32px 36px; z-index: 91; width: 460px; max-width: 95vw;
       backdrop-filter: blur(20px);
       box-shadow: 0 0 60px rgba(255,200,0,.1), 0 0 0 1px rgba(255,200,0,.06);
@@ -1112,12 +1241,150 @@
       text-transform: uppercase; transition: all .15s;
     }
     #settings-reset:hover { background: rgba(255,80,80,.15); box-shadow: 0 0 10px rgba(255,80,80,.2); }
+
+    /* ── Light theme ── */
+    body.theme-light { --bg-base: 245,247,255; --bg-deep: 234,237,252; }
+    body.theme-light #header {
+      background: linear-gradient(to bottom, rgba(240,242,255,.97) 60%, transparent);
+    }
+    body.theme-light .stat-card { box-shadow: 0 2px 10px rgba(0,0,30,.1); }
+    body.theme-light .stat-label { color: rgba(10,15,50,.6); }
+    body.theme-light .c-recipient { color: #1a203a; }
+    body.theme-light .c-location  { color: #4a6075; }
+    body.theme-light .c-agency    { color: #455a6e; }
+    body.theme-light .c-date      { color: #607080; }
+    body.theme-light #search-input { color: #1a203a; background: rgba(0,0,0,.04); }
+    body.theme-light #search-input::placeholder { color: rgba(10,15,50,.3); }
+    body.theme-light #sort-select { color: rgba(10,15,50,.7); background: rgba(0,0,0,.05); }
+    body.theme-light .cp-agency-label { color: rgba(10,15,50,.75); }
+    body.theme-light .cp-c-agency    { color: rgba(10,15,50,.55); }
+    body.theme-light .cp-c-date      { color: rgba(10,15,50,.45); }
+    body.theme-light .cp-c-meta      { color: rgba(10,15,50,.55); }
+    body.theme-light .cp-info-val    { color: rgba(10,15,50,.85); }
+    body.theme-light .cp-stat-label  { color: rgba(10,15,50,.6); }
+    body.theme-light .cp-stock-hint,
+    body.theme-light #cp-market-state { color: rgba(10,15,50,.45); }
+    body.theme-light #cp-price-display { color: #1a203a; }
+    body.theme-light .cp-range-btn { color: rgba(10,15,50,.55); }
+    body.theme-light .cp-range-btn:hover { color: rgba(10,15,50,.8); }
+    body.theme-light #cp-wiki-desc   { color: #3a4e60 !important; }
+    body.theme-light .s-label        { color: rgba(10,15,50,.7); }
+    body.theme-light .tt-lbl { color: rgba(10,15,50,.5); }
+    body.theme-light .tt-val { color: #1a203a; }
+    body.theme-light #detail-title   { color: #0a0f28; }
+    body.theme-light .dg-label  { color: rgba(10,15,50,.55); }
+    body.theme-light .dg-value  { color: #1a203a; }
+    body.theme-light #detail-desc { color: #3a5060; }
+    body.theme-light #detail-agency-contracts h4 { color: rgba(10,15,50,.5); }
+    body.theme-light .dac-name  { color: #405060; }
+    body.theme-light #detail-close { border-color: rgba(10,15,50,.15); color: rgba(10,15,50,.4); }
+    /* Catch inline-styled white text in panels (JS-generated HTML) */
+    body.theme-light #company-body [style*="rgba(255,255,255"] { color: rgba(10,15,50,.55) !important; }
+    body.theme-light #country-body  [style*="rgba(255,255,255"] { color: rgba(10,15,50,.55) !important; }
+    body.theme-light #company-body [style*="color:#fff"]        { color: #1a203a !important; }
+    /* Tier amount colors — darken neons for light bg */
+    body.theme-light .t-mega   { color: #cc1111; text-shadow: none; }
+    body.theme-light .t-large  { color: #cc5500; text-shadow: none; }
+    body.theme-light .t-medium { color: #997700; text-shadow: none; }
+    body.theme-light .t-small  { color: #007a66; text-shadow: none; }
+    /* Detail panel amount tiers */
+    body.theme-light .dg-value.amount-1b   { color: #cc1111; text-shadow: none; }
+    body.theme-light .dg-value.amount-100m { color: #cc5500; text-shadow: none; }
+    body.theme-light .dg-value.amount-10m  { color: #997700; text-shadow: none; }
+    body.theme-light .dg-value.amount-low  { color: #007a66; text-shadow: none; }
+    /* Sidebar tabs (LIST / TOP $ / WATCH) */
+    body.theme-light .stab { color: rgba(10,15,50,.45); }
+    /* Theme picker buttons */
+    body.theme-light .theme-btn { color: rgba(10,15,50,.55); background: rgba(0,0,0,.05); border-color: rgba(10,15,50,.15); }
+    body.theme-light .theme-btn:hover { color: rgba(10,15,50,.8); background: rgba(0,0,0,.09); border-color: rgba(10,15,50,.3); }
+    /* Header spin paused state */
+    body.theme-light #spin-btn.paused { color: #cc2222; }
+    /* Legend/footer text */
+    body.theme-light .leg { color: rgba(10,15,50,.5); }
+    body.theme-light #last-updated { color: rgba(10,15,50,.35); }
+
+    /* ── Reduce motion / performance mode ── */
+    body.reduce-motion h1,
+    body.reduce-motion .stat-value,
+    body.reduce-motion .stat-card,
+    body.reduce-motion .stat-card::before,
+    body.reduce-motion .stat-card::after,
+    body.reduce-motion #sidebar::before,
+    body.reduce-motion #loading p,
+    body.reduce-motion .live-dot,
+    body.reduce-motion .contract-card { animation: none !important; }
+
+    body.reduce-motion #sidebar,
+    body.reduce-motion #company-panel,
+    body.reduce-motion #country-panel,
+    body.reduce-motion #settings-panel,
+    body.reduce-motion #detail-panel,
+    body.reduce-motion #tooltip,
+    body.reduce-motion .stat-card,
+    body.reduce-motion #token-modal,
+    body.reduce-motion #disclaimer-box { backdrop-filter: none !important; }
+
+    /* Auto-honor OS preference */
+    @media (prefers-reduced-motion: reduce) {
+      h1, .stat-value, .stat-card, .stat-card::before, .stat-card::after,
+      #sidebar::before, #loading p, .live-dot, .contract-card { animation: none !important; }
+    }
   </style>
 </head>
 <body>
 
-<div id="loading"><div class="spinner"></div><p>Initializing globe...</p></div>
+<div id="loading"><div class="spinner"></div><p id="loading-status">Initializing...</p><div id="loading-bar-wrap"><div id="loading-bar-fill"></div></div><div id="loading-sub"></div><div id="loading-error"></div></div>
 <div id="cesiumContainer"></div>
+
+<!-- Admin panel -->
+<div id="admin-modal">
+  <div id="admin-panel">
+    <h2>⬡ Admin <button class="admin-close" onclick="closeAdminPanel()">✕</button></h2>
+
+    <!-- Login section (shown when not authenticated) -->
+    <div id="admin-login-section" class="admin-section">
+      <div class="admin-section-title">Authentication</div>
+      <p style="font-size:9px;color:rgba(255,255,255,.4);margin:0 0 14px;line-height:1.6">
+        Sign in with your GitHub account to manage company overrides.
+      </p>
+      <a id="admin-github-btn" href="/api/admin/auth" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Login with GitHub
+      </a>
+      <div id="admin-login-err" style="margin-top:10px;font-size:8px;color:#ff4455;letter-spacing:1px;min-height:14px"></div>
+    </div>
+
+    <!-- Manage section (shown when authenticated) -->
+    <div id="admin-manage-section" class="admin-section" style="display:none">
+      <div class="admin-section-title">Edit override</div>
+      <div class="admin-field">
+        <div class="admin-label">Company</div>
+        <input id="admin-company-input" type="text" class="admin-input" placeholder="exact company name">
+      </div>
+      <div class="admin-field">
+        <div class="admin-label">Ticker override <span style="opacity:.4;font-size:7px">leave blank to clear</span></div>
+        <input id="admin-ticker-input" type="text" class="admin-input" placeholder="e.g. LMT" style="text-transform:uppercase" maxlength="12" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="admin-field">
+        <div class="admin-label">Description override <span style="opacity:.4;font-size:7px">leave blank to clear</span></div>
+        <textarea id="admin-desc-input" class="admin-input" placeholder="custom description shown to all users"></textarea>
+      </div>
+      <div class="admin-btn-row">
+        <button class="admin-btn" onclick="adminSaveOverride()">Save override</button>
+        <button class="admin-btn danger" onclick="adminDeleteOverride()">Delete override</button>
+      </div>
+      <div id="admin-save-status" class="admin-status"></div>
+
+      <div class="admin-section-title" style="margin-top:20px">Active overrides</div>
+      <div id="admin-overrides-list" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(255,255,255,.3)">Loading…</div>
+
+      <div class="admin-btn-row" style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+        <button class="admin-btn danger" onclick="adminLogout()">Sign out</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="admin-badge" onclick="openAdminPanel()">⬡ admin</div>
 
 <!-- First-load disclaimer modal -->
 <div id="disclaimer-overlay">
@@ -1422,6 +1689,48 @@
           <input type="range" class="s-slider" id="si-arcOpacity" min="5" max="90" step="5" value="35"
             oninput="updateSlider('arcOpacity', this.value)">
         </div>
+
+        <div class="s-row">
+          <span class="s-label">Sun lighting</span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-globeLighting" onchange="updateSetting('globeLighting', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
+      </div>
+
+      <div class="s-divider"></div>
+
+      <!-- VISUAL FX -->
+      <div class="s-section" style="margin-top:14px">
+        <div class="s-section-title">Visual FX</div>
+
+        <div class="s-row">
+          <span class="s-label">Bloom glow</span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-bloom" onchange="updateSetting('bloom', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="s-row s-slider-row" id="si-bloomStrength-row" style="display:none">
+          <div class="s-slider-top">
+            <span class="s-label">Bloom strength</span>
+            <span class="s-value" id="sv-bloomStrength">2</span>
+          </div>
+          <input type="range" class="s-slider" id="si-bloomStrength" min="0.5" max="5" step="0.5" value="2"
+            oninput="updateSlider('bloomStrength', this.value)">
+        </div>
+
+        <div class="s-row">
+          <span class="s-label">Stars</span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-showStars" checked onchange="updateSetting('showStars', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
       </div>
 
       <div class="s-divider"></div>
@@ -1429,6 +1738,18 @@
       <!-- THEME -->
       <div class="s-section" style="margin-top:14px">
         <div class="s-section-title">Theme</div>
+
+        <div class="s-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <span class="s-label">Theme</span>
+          <div id="theme-btns">
+            <button class="theme-btn active" data-theme="phantom" onclick="setTheme('phantom')"><span class="theme-dot" style="background:#00ff88"></span>Phantom</button>
+            <button class="theme-btn" data-theme="midnight" onclick="setTheme('midnight')"><span class="theme-dot" style="background:#4488ff"></span>Midnight</button>
+            <button class="theme-btn" data-theme="ember" onclick="setTheme('ember')"><span class="theme-dot" style="background:#ff8800"></span>Ember</button>
+            <button class="theme-btn" data-theme="infrared" onclick="setTheme('infrared')"><span class="theme-dot" style="background:#ff4466"></span>Infrared</button>
+            <button class="theme-btn" data-theme="void" onclick="setTheme('void')"><span class="theme-dot" style="background:#cc44ff"></span>Void</button>
+            <button class="theme-btn" data-theme="solar" onclick="setTheme('solar')"><span class="theme-dot" style="background:#0055cc"></span>Solar</button>
+          </div>
+        </div>
 
         <div class="s-row" style="flex-direction:column;align-items:flex-start;gap:10px">
           <span class="s-label">Accent color</span>
@@ -1475,6 +1796,29 @@
           <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
             <span>80%</span><span>100%</span><span>130%</span>
           </div>
+        </div>
+      </div>
+
+      <div class="s-divider"></div>
+
+      <!-- PERFORMANCE -->
+      <div class="s-section" style="margin-top:14px">
+        <div class="s-section-title">Performance</div>
+
+        <div class="s-row">
+          <span class="s-label">Reduce animations <span style="font-size:7px;opacity:.4">CPU/GPU</span></span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-reduceMotion" onchange="updateSetting('reduceMotion', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="s-row">
+          <span class="s-label">Low quality globe <span style="font-size:7px;opacity:.4">GPU</span></span>
+          <label class="s-toggle">
+            <input type="checkbox" id="si-lowPerfGlobe" onchange="updateSetting('lowPerfGlobe', this.checked)">
+            <span class="s-toggle-track"></span>
+          </label>
         </div>
       </div>
 
@@ -1771,9 +2115,16 @@ const DEFAULT_SETTINGS = {
   pages: 10, daysIdx: 3, refreshSec: 60, rotIdx: 2,
   hubs: true, arcs: true, arcOpacity: 35, scanlines: true,
   accent: '#00ff88',
+  theme: 'phantom',
   sort: 'amount',
   textScale: 100,
   experimental: false,
+  reduceMotion: false,
+  lowPerfGlobe: false,
+  globeLighting: false,
+  bloom: false,
+  bloomStrength: 2,
+  showStars: true,
 };
 let CFG = { ...DEFAULT_SETTINGS };
 let refreshTimer = null;
@@ -1796,20 +2147,78 @@ function hexToRgb(hex) {
   return `${r}, ${g}, ${b}`;
 }
 
+// Darker variants of each accent for use on light backgrounds
+const LIGHT_ACCENT_MAP = {
+  '#00ff88': '#007a40',
+  '#00d4ff': '#0077aa',
+  '#4488ff': '#1a55d4',
+  '#ff8800': '#b85000',
+  '#cc44ff': '#7a1fcc',
+  '#ff4466': '#cc0030',
+  '#0055cc': '#003d9a',
+};
+
+function darkenHex(hex) {
+  // Fallback: halve each channel
+  const h = hex.replace('#','');
+  const r = Math.round(parseInt(h.slice(0,2),16) * 0.5);
+  const g = Math.round(parseInt(h.slice(2,4),16) * 0.5);
+  const b = Math.round(parseInt(h.slice(4,6),16) * 0.5);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
 function applyAccentVars(hex) {
+  const isLight = !!(THEMES[CFG.theme] || {}).light;
+  const effective = isLight ? (LIGHT_ACCENT_MAP[hex] || darkenHex(hex)) : hex;
   const r = document.documentElement;
-  r.style.setProperty('--accent', hex);
-  r.style.setProperty('--accent-rgb', hexToRgb(hex));
+  r.style.setProperty('--accent', effective);
+  r.style.setProperty('--accent-rgb', hexToRgb(effective));
+  r.style.setProperty('--accent-glow', `rgba(${hexToRgb(effective)},.35)`);
+  r.style.setProperty('--accent-border', `rgba(${hexToRgb(effective)},.3)`);
+}
+
+const THEMES = {
+  phantom:  { label:'Phantom',  bgBase:'0,4,18',     bgDeep:'0,2,12',    accent:'#00ff88', light: false },
+  midnight: { label:'Midnight', bgBase:'2,2,20',     bgDeep:'0,0,14',    accent:'#4488ff', light: false },
+  ember:    { label:'Ember',    bgBase:'18,5,0',     bgDeep:'10,2,0',    accent:'#ff8800', light: false },
+  infrared: { label:'Infrared', bgBase:'14,0,4',     bgDeep:'8,0,2',     accent:'#ff4466', light: false },
+  void:     { label:'Void',     bgBase:'2,2,6',      bgDeep:'0,0,2',     accent:'#cc44ff', light: false },
+  solar:    { label:'Solar',    bgBase:'245,247,255', bgDeep:'234,237,252', accent:'#0055cc', light: true },
+};
+
+function setTheme(id, applyAccent = true) {
+  const t = THEMES[id];
+  if (!t) return;
+  CFG.theme = id;
+  const r = document.documentElement;
+  r.style.setProperty('--bg-base', t.bgBase);
+  r.style.setProperty('--bg-deep', t.bgDeep);
+  document.body.classList.toggle('theme-light', !!t.light);
+  // Force scanlines off for light theme, restore user preference otherwise
+  document.body.classList.toggle('no-scanlines', t.light || !CFG.scanlines);
+  if (applyAccent) {
+    CFG.accent = t.accent;
+    applyAccentVars(t.accent);
+  }
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === id));
+  document.querySelectorAll('.accent-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === CFG.accent));
+  saveSettings();
 }
 
 function applyAllSettings() {
+  // Apply theme bg vars (don't overwrite accent — apply it separately below)
+  const t = THEMES[CFG.theme] || THEMES.phantom;
+  document.documentElement.style.setProperty('--bg-base', t.bgBase);
+  document.documentElement.style.setProperty('--bg-deep', t.bgDeep);
+  document.body.classList.toggle('theme-light', !!t.light);
   applyAccentVars(CFG.accent);
 
   // Scanlines
   document.body.style.setProperty('--scanlines', CFG.scanlines ? '1' : '0');
   document.querySelector('body')._scanlines = CFG.scanlines;
-  // Toggle scanline pseudo-element via a class
-  document.body.classList.toggle('no-scanlines', !CFG.scanlines);
+  // Toggle scanline pseudo-element via a class (always off for light theme)
+  const isLight = !!(THEMES[CFG.theme] || {}).light;
+  document.body.classList.toggle('no-scanlines', isLight || !CFG.scanlines);
 
   // Sort
   sortMode = CFG.sort;
@@ -1822,6 +2231,11 @@ function applyAllSettings() {
 
   // Text scale
   applyTextScale();
+
+  // Performance settings
+  applyReduceMotion(CFG.reduceMotion);
+  applyGlobeQuality(CFG.lowPerfGlobe);
+  applyGlobeFX();
 
   // Experimental mode (must run before syncSettingsUI so slider max is set correctly)
   applyExperimental(CFG.experimental);
@@ -1844,8 +2258,18 @@ function syncSettingsUI() {
   set('si-sort', CFG.sort);
   set('si-textScale', CFG.textScale);
   setCheck('si-experimental', CFG.experimental);
+  setCheck('si-reduceMotion', CFG.reduceMotion);
+  setCheck('si-lowPerfGlobe', CFG.lowPerfGlobe);
+  setCheck('si-globeLighting', CFG.globeLighting);
+  setCheck('si-bloom', CFG.bloom);
+  set('si-bloomStrength', CFG.bloomStrength);
+  setCheck('si-showStars', CFG.showStars);
+  const bloomRow = document.getElementById('si-bloomStrength-row');
+  if (bloomRow) bloomRow.style.display = CFG.bloom ? '' : 'none';
   // Display values
   updateDisplayValues();
+  // Theme buttons
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === CFG.theme));
   // Accent swatches
   document.querySelectorAll('.accent-swatch').forEach(s => s.classList.toggle('active', s.dataset.color === CFG.accent));
 }
@@ -1855,8 +2279,9 @@ function updateDisplayValues() {
   if (el('sv-pages'))      el('sv-pages').textContent      = (CFG.pages * 100).toLocaleString();
   if (el('sv-days'))       el('sv-days').textContent       = DAY_PRESETS[CFG.daysIdx] + ' days';
   if (el('sv-rotation'))   el('sv-rotation').textContent   = ROT_LABELS[CFG.rotIdx];
-  if (el('sv-arcOpacity')) el('sv-arcOpacity').textContent = CFG.arcOpacity + '%';
-  if (el('sv-textScale'))  el('sv-textScale').textContent  = CFG.textScale + '%';
+  if (el('sv-arcOpacity'))     el('sv-arcOpacity').textContent     = CFG.arcOpacity + '%';
+  if (el('sv-textScale'))      el('sv-textScale').textContent      = CFG.textScale + '%';
+  if (el('sv-bloomStrength'))  el('sv-bloomStrength').textContent  = CFG.bloomStrength;
 }
 
 function applyExperimental(on) {
@@ -1888,8 +2313,9 @@ function updateSlider(key, rawVal) {
   const v = parseInt(rawVal);
   if (key === 'pages')      { CFG.pages = v;      }
   if (key === 'days')       { CFG.daysIdx = v;    }
-  if (key === 'rotation')   { CFG.rotIdx = v;     }
-  if (key === 'arcOpacity') { CFG.arcOpacity = v; }
+  if (key === 'rotation')      { CFG.rotIdx = v;         }
+  if (key === 'arcOpacity')   { CFG.arcOpacity = v;     }
+  if (key === 'bloomStrength'){ CFG.bloomStrength = parseFloat(rawVal); applyGlobeFX(); }
   if (key === 'textScale')  { CFG.textScale = v;  }
   updateDisplayValues();
   saveSettings();
@@ -1906,10 +2332,48 @@ function updateSetting(key, val) {
   }
   if (key === 'hubs')         { CFG.hubs = !!val;         if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); } }
   if (key === 'arcs')         { CFG.arcs = !!val;         if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); } }
-  if (key === 'scanlines')    { CFG.scanlines = !!val;    document.body.classList.toggle('no-scanlines', !val); }
+  if (key === 'scanlines')    { CFG.scanlines = !!val;    document.body.classList.toggle('no-scanlines', !val || !!(THEMES[CFG.theme]||{}).light); }
   if (key === 'sort')         { CFG.sort = val;           sortMode = val; applyFilter(); }
   if (key === 'experimental') { CFG.experimental = !!val; applyExperimental(!!val); }
+  if (key === 'reduceMotion')  { CFG.reduceMotion = !!val;  applyReduceMotion(!!val); }
+  if (key === 'lowPerfGlobe') { CFG.lowPerfGlobe = !!val;  applyGlobeQuality(!!val); }
+  if (key === 'globeLighting') { CFG.globeLighting = !!val; applyGlobeFX(); }
+  if (key === 'bloom')         { CFG.bloom = !!val;         applyGlobeFX(); const r = document.getElementById('si-bloomStrength-row'); if(r) r.style.display = val ? '' : 'none'; }
+  if (key === 'showStars')     { CFG.showStars = !!val;     applyGlobeFX(); }
   saveSettings();
+}
+
+function applyReduceMotion(val) {
+  document.body.classList.toggle('reduce-motion', !!val);
+}
+
+function applyGlobeQuality(lowPerf) {
+  if (!viewer) return;
+  const scene = viewer.scene;
+  viewer.resolutionScale = lowPerf ? 0.7 : 1.0;
+  scene.globe.maximumScreenSpaceError = lowPerf ? 4 : 2;
+  scene.fog.enabled = !lowPerf;
+  scene.globe.showGroundAtmosphere = !lowPerf;
+  scene.skyAtmosphere.show = !lowPerf;
+  viewer.scene.requestRender();
+}
+
+function applyGlobeFX() {
+  if (!viewer) return;
+  try {
+    const scene = viewer.scene;
+    // Sun lighting
+    scene.globe.enableLighting = CFG.globeLighting;
+    // Bloom
+    const bloom = scene.postProcessStages.bloom;
+    bloom.enabled = CFG.bloom;
+    bloom.uniforms.glowOnly = false;
+    bloom.uniforms.strength = CFG.bloomStrength;
+    bloom.uniforms.brightness = -0.3;
+    // Stars
+    scene.skyBox.show = CFG.showStars;
+    viewer.scene.requestRender();
+  } catch(e) { /* Cesium feature not available */ }
 }
 
 function applyLiveSettings() {
@@ -1991,9 +2455,30 @@ document.addEventListener('mousemove', e => {
   ttEl.style.left = x + 'px'; ttEl.style.top = y + 'px';
 });
 
+// ─── Loading progress ────────────────────────────────────────────────────────
+function setLoadProgress(pct, label, sub) {
+  const fill = document.getElementById('loading-bar-fill');
+  const status = document.getElementById('loading-status');
+  const subEl = document.getElementById('loading-sub');
+  if (fill) fill.style.width = pct + '%';
+  if (status && label) status.textContent = label;
+  if (subEl) subEl.textContent = sub || '';
+}
+function showLoadError(msg) {
+  const el = document.getElementById('loading-error');
+  if (!el) return;
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  const fill = document.getElementById('loading-bar-fill');
+  if (fill) fill.style.background = '#ff4455';
+  const status = document.getElementById('loading-status');
+  if (status) { status.style.color = '#ff4455'; status.style.textShadow = '0 0 10px rgba(255,40,60,.6)'; }
+}
+
 // ─── Cesium init ─────────────────────────────────────────────────────────────
 async function initCesium(token) {
   Cesium.Ion.defaultAccessToken = token;
+  setLoadProgress(10, 'Building viewer...');
 
   viewer = new Cesium.Viewer('cesiumContainer', {
     terrain: Cesium.Terrain.fromWorldTerrain(),
@@ -2010,6 +2495,7 @@ async function initCesium(token) {
     requestRenderMode: true,
     maximumRenderTimeChange: Infinity,
   });
+  setLoadProgress(45, 'Configuring scene...');
 
   // Nice dark space background
   viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#000005');
@@ -2096,6 +2582,7 @@ async function initCesium(token) {
       clearSelection();
     }
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  setLoadProgress(65, 'Fetching contracts...');
 }
 
 // ─── Render globe ─────────────────────────────────────────────────────────────
@@ -2353,16 +2840,23 @@ function populateWikiSection(data) {
   const nameEl  = document.getElementById('cp-wiki-company-name-sub');
   if (!descEl) return;
 
-  if (!data) {
+  // Admin override description takes priority
+  const ovrDesc = companyOverrides[currentWatchCompany]?.description;
+  if (ovrDesc) {
+    descEl.textContent = ovrDesc;
+    descEl.style.color = '';
+    // Still show logo/link from wiki data if available
+    if (!data) return;
+  } else if (!data) {
     descEl.textContent = 'No Wikipedia article found.';
     descEl.style.color = 'rgba(255,255,255,.15)';
     return;
+  } else {
+    // Description — cap to ~2 sentences
+    const sentences = (data.description || '').split(/(?<=[.!?])\s+/);
+    descEl.textContent = sentences.slice(0, 2).join(' ');
+    descEl.style.color = '';
   }
-
-  // Description — cap to ~2 sentences
-  const sentences = (data.description || '').split(/(?<=[.!?])\s+/);
-  descEl.textContent = sentences.slice(0, 2).join(' ');
-  descEl.style.color = '';
 
   // Logo
   if (data.logoUrl && logoEl) {
@@ -2410,18 +2904,57 @@ async function fetchStockPrice(ticker) {
   } catch { return null; }
 }
 
+async function fetchRecipientProfile(recipientId) {
+  try {
+    const r = await fetch(`https://api.usaspending.gov/api/v2/recipient/${encodeURIComponent(recipientId)}/`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+const BIZ_TYPE_LABELS = {
+  manufacturer_of_goods: 'Manufacturer',
+  other_than_small_business: 'Large Business',
+  small_business: 'Small Business',
+  corporate_entity_not_tax_exempt: 'Corporation',
+  us_owned_business: 'US-Owned',
+  veteran_owned_business: 'Veteran-Owned',
+  service_disabled_veteran_owned_business: 'SDVOB',
+  women_owned_small_business: 'Women-Owned',
+  minority_owned_business: 'Minority-Owned',
+  for_profit_organization: 'For-Profit',
+  nonprofit_organization: 'Nonprofit',
+  foreign_owned: 'Foreign-Owned',
+};
+
 function buildCompanyStats(name, contractList) {
   const contracts = contractList || allContracts.filter(c => c['Recipient Name'] === name);
   const total = contracts.reduce((s, c) => s + c._amt, 0);
+  const ceiling = contracts.reduce((s, c) => s + (parseFloat(c['Base and All Options Value']) || 0), 0);
   const agencies = {};
   contracts.forEach(c => {
     const ag = c['Awarding Agency'] || 'Unknown';
     agencies[ag] = (agencies[ag] || 0) + c._amt;
   });
+  const naics = {};
+  contracts.forEach(c => {
+    const key = c['NAICS Code'] ? `${c['NAICS Code']} — ${c['NAICS Description'] || ''}` : null;
+    if (key) naics[key] = (naics[key] || 0) + c._amt;
+  });
+  const psc = {};
+  contracts.forEach(c => {
+    const key = c['Product or Service Code'] ? `${c['Product or Service Code']}${c['Product or Service Code Description'] ? ' — ' + c['Product or Service Code Description'] : ''}` : null;
+    if (key) psc[key] = (psc[key] || 0) + c._amt;
+  });
+  const recipientId = contracts.find(c => c['recipient_id'])?.['recipient_id'] || null;
+  const uei = contracts.find(c => c['Recipient UEI'])?.['Recipient UEI'] || null;
+  const parentName = contracts.find(c => c['Recipient Parent Name'])?.['Recipient Parent Name'] || null;
   const agencySorted = Object.entries(agencies).sort((a, b) => b[1] - a[1]);
+  const naicsSorted  = Object.entries(naics).sort((a, b) => b[1] - a[1]);
+  const pscSorted    = Object.entries(psc).sort((a, b) => b[1] - a[1]);
   const dates = contracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
   const dateRange = dates.length > 1 ? { from: dates[0].slice(0,10), to: dates[dates.length-1].slice(0,10) } : dates.length === 1 ? { from: dates[0].slice(0,10), to: dates[0].slice(0,10) } : null;
-  return { name, contracts, total, agencies: agencySorted, dateRange };
+  return { name, contracts, total, ceiling, agencies: agencySorted, naics: naicsSorted, psc: pscSorted, dateRange, recipientId, uei, parentName };
 }
 
 async function fetchCompanyContracts(name, onProgress) {
@@ -2432,7 +2965,10 @@ async function fetchCompanyContracts(name, onProgress) {
     'Awarding Agency','Awarding Sub Agency','Last Modified Date',
     'Place of Performance City Name','Place of Performance State Code',
     'Place of Performance Country Code','Place of Performance Country Name',
-    'generated_internal_id',
+    'generated_internal_id','recipient_id','Recipient UEI','Recipient Parent Name',
+    'NAICS Code','NAICS Description','Product or Service Code','Product or Service Code Description',
+    'Base and All Options Value',
+    'Period of Performance Start Date','Period of Performance Current End Date',
   ];
   const filters = {
     award_type_codes: ['A','B','C','D'],
@@ -2471,9 +3007,10 @@ function renderCompanySummaryHtml(stats, fromApi) {
         <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent)">${stats.dateRange.from} → ${stats.dateRange.to}</div>
        </div>`
     : '';
+  const usaAttr = `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
   const sourceNote = fromApi
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From USASpending API · Since Oct 2007</div>`
-    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset</div>
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${usaAttr} · Since Oct 2007</div>`
+    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${usaAttr}</div>
        <button class="cp-load-all-btn" onclick="loadAllCompanyContracts('${safeName}')">⬇ Load All from API</button>`;
   return `
     <div class="cp-section-title">Summary</div>
@@ -2483,9 +3020,10 @@ function renderCompanySummaryHtml(stats, fromApi) {
         <div class="cp-stat-value">${stats.contracts.length.toLocaleString()}</div>
       </div>
       <div class="cp-stat-box">
-        <div class="cp-stat-label">Total Value</div>
+        <div class="cp-stat-label">Obligated</div>
         <div class="cp-stat-value">${fmt$Html(stats.total)}</div>
       </div>
+      ${stats.ceiling > stats.total ? `<div class="cp-stat-box" style="grid-column:1/-1"><div class="cp-stat-label">Contract Ceiling</div><div class="cp-stat-value" style="opacity:.7">${fmt$Html(stats.ceiling)}</div></div>` : ''}
       <div class="cp-stat-box" style="grid-column:1/-1">
         <div class="cp-stat-label">Agencies</div>
         <div class="cp-stat-value">${stats.agencies.length}</div>
@@ -2493,6 +3031,40 @@ function renderCompanySummaryHtml(stats, fromApi) {
       ${dateBox}
     </div>
     ${sourceNote}`;
+}
+
+function renderCompanyInfoHtml(profile) {
+  if (!profile) return '';
+  const loc = profile.location;
+  const hq = loc ? [loc.city_name, loc.state_code, loc.country_name].filter(Boolean).join(', ') : null;
+  const bizTypes = (profile.business_types || [])
+    .map(t => BIZ_TYPE_LABELS[t]).filter(Boolean)
+    .filter(t => t !== 'US-Owned' && t !== 'For-Profit') // too generic, skip
+    .join(' · ') || null;
+  const rows = [
+    profile.uei        ? `<div class="cp-info-row"><span class="cp-info-label">UEI</span><span class="cp-info-val">${profile.uei}</span></div>` : '',
+    profile.parent_name && profile.parent_name !== profile.name
+      ? `<div class="cp-info-row"><span class="cp-info-label">Parent</span><span class="cp-info-val">${profile.parent_name}</span></div>` : '',
+    hq   ? `<div class="cp-info-row"><span class="cp-info-label">HQ</span><span class="cp-info-val">${hq}</span></div>` : '',
+    bizTypes ? `<div class="cp-info-row"><span class="cp-info-label">Type</span><span class="cp-info-val">${bizTypes}</span></div>` : '',
+  ].join('');
+  return rows ? `<div class="cp-section" id="cp-info-section"><div class="cp-section-title">Company Info</div>${rows}</div>` : '';
+}
+
+function renderCompanyNaicsHtml(stats) {
+  if (!stats.naics.length) return '';
+  const max = stats.naics[0][1];
+  const rows = stats.naics.slice(0, 6).map(([label, amt]) => {
+    const pct = Math.round((amt / max) * 100);
+    return `<div class="cp-agency-row">
+      <div class="cp-agency-label">
+        <span class="cp-agency-name" title="${label}">${label}</span>
+        <span class="cp-agency-amt">${fmt$(amt)}</span>
+      </div>
+      <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  return `<div class="cp-section" id="cp-naics-section"><div class="cp-section-title">Industries (NAICS)</div>${rows}</div>`;
 }
 
 function renderCompanyAgenciesHtml(stats) {
@@ -2514,14 +3086,28 @@ function renderCompanyAgenciesHtml(stats) {
 function renderCompanyContractsHtml(stats) {
   if (!stats.contracts.length) return `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace">No contracts found.</div>`;
   const safeId = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const rows = stats.contracts.slice(0, 100).map(c => `
+  const rows = stats.contracts.slice(0, 100).map(c => {
+    const ceiling = parseFloat(c['Base and All Options Value']) || 0;
+    const ceilLine = ceiling > c._amt * 1.05
+      ? `<div class="cp-c-meta">Ceiling ${fmt$(ceiling)}</div>` : '';
+    const perfStart = c['Period of Performance Start Date'];
+    const perfEnd   = c['Period of Performance Current End Date'];
+    const perfLine  = perfStart
+      ? `<div class="cp-c-meta">${perfStart.slice(0,10)} → ${(perfEnd || '').slice(0,10) || '?'}</div>` : '';
+    const naicsLine = c['NAICS Description']
+      ? `<div class="cp-c-meta" style="opacity:.55">${c['NAICS Description']}</div>` : '';
+    const pscLine = c['Product or Service Code Description']
+      ? `<div class="cp-c-meta" style="opacity:.55">${c['Product or Service Code']} · ${c['Product or Service Code Description']}</div>` : '';
+    return `
     <div class="cp-contract-row" onclick="focusContract('${safeId(c._id)}');closeCompanyProfile()">
       <div class="cp-c-top">
         <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
         <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
       </div>
       <div class="cp-c-agency" title="${c['Awarding Sub Agency'] || c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
-    </div>`).join('');
+      ${ceilLine}${perfLine}${naicsLine}${pscLine}
+    </div>`;
+  }).join('');
   const more = stats.contracts.length > 100 ? `<div style="font-size:8px;color:rgba(255,255,255,.3);padding:6px 0;text-align:center;font-family:'Share Tech Mono',monospace">Showing top 100 of ${stats.contracts.length}</div>` : '';
   return `<div class="cp-section"><div class="cp-section-title">Contracts (${stats.contracts.length})</div>${rows}${more}</div>`;
 }
@@ -2546,8 +3132,10 @@ async function loadAllCompanyContracts(name) {
     const summaryEl   = document.getElementById('cp-summary-section');
     const agenciesEl  = document.getElementById('cp-agencies-section');
     const contractsEl = document.getElementById('cp-contracts-section');
+    const naicsEl     = document.getElementById('cp-naics-section');
     if (summaryEl)   summaryEl.innerHTML   = renderCompanySummaryHtml(stats, true);
     if (agenciesEl)  agenciesEl.innerHTML  = renderCompanyAgenciesHtml(stats);
+    if (naicsEl)     naicsEl.outerHTML     = renderCompanyNaicsHtml(stats);
     if (contractsEl) contractsEl.innerHTML = renderCompanyContractsHtml(stats);
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = '⬇ Load All from API'; }
@@ -2578,7 +3166,8 @@ async function openCompanyProfile(name) {
 
   const stats   = buildCompanyStats(name);
   const maxAmt  = stats.agencies.length ? stats.agencies[0][1] : 1;
-  const cached  = companyTickerCache[name] || '';
+  // Use admin override ticker if set, otherwise cached lookup
+  const cached  = companyOverrides[name]?.ticker || companyTickerCache[name] || '';
 
   const agencyRows = stats.agencies.slice(0, 8).map(([ag, amt]) => {
     const pct = Math.round((amt / maxAmt) * 100);
@@ -2643,21 +3232,36 @@ async function openCompanyProfile(name) {
         <span style="font-size:7px;color:rgba(255,255,255,.25);font-family:'Share Tech Mono',monospace;line-height:1.3;max-width:80px">auto-matched, may be incorrect</span>
       </div>
     </div>
+    <div id="cp-info-section"></div>
     <div class="cp-section" id="cp-summary-section">
       ${renderCompanySummaryHtml(stats, false)}
     </div>
     <div id="cp-agencies-section">
       ${renderCompanyAgenciesHtml(stats)}
     </div>
+    <div id="cp-naics-section">
+      ${renderCompanyNaicsHtml(stats)}
+    </div>
     <div id="cp-contracts-section">
       ${renderCompanyContractsHtml(stats)}
     </div>
   `;
 
+  // Inject admin edit buttons if logged in
+  injectAdminCompanyButtons(name);
+
   // Fetch Wikipedia data
   fetchWikiData(name).then(populateWikiSection);
 
-  // Auto-detect ticker if not cached
+  // Fetch recipient profile (UEI, parent, address, business types) async
+  if (stats.recipientId) {
+    fetchRecipientProfile(stats.recipientId).then(profile => {
+      const el = document.getElementById('cp-info-section');
+      if (el) el.outerHTML = renderCompanyInfoHtml(profile) || '<div id="cp-info-section"></div>';
+    });
+  }
+
+  // Auto-detect ticker if not cached (skip if admin override is set)
   if (!cached) {
     document.getElementById('cp-stock-hint').textContent = 'Looking up ticker…';
     lookupTicker(name).then(async ticker => {
@@ -2875,9 +3479,10 @@ function renderCountryBody(body, contracts, fromApi, code) {
     </div>`).join('');
 
   const safeCode = code ? `'${code}'` : 'null';
+  const usaAttrCt = `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
   const sourceNote = fromApi
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From USASpending API · Since Oct 2007</div>`
-    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset</div>
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${usaAttrCt} · Since Oct 2007</div>`
+    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${usaAttrCt}</div>
        <button class="cp-load-all-btn" id="ctp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
        <div id="ctp-api-progress" style="font-size:9px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:6px;letter-spacing:.5px"></div>`;
 
@@ -3380,7 +3985,10 @@ async function fetchContracts() {
     'Awarding Agency','Awarding Sub Agency','Last Modified Date',
     'Place of Performance City Name','Place of Performance State Code',
     'Place of Performance Country Code','Place of Performance Country Name',
-    'generated_internal_id','NAICS Code','NAICS Description',
+    'generated_internal_id','recipient_id','Recipient UEI','Recipient Parent Name',
+    'NAICS Code','NAICS Description','Product or Service Code','Product or Service Code Description',
+    'Base and All Options Value',
+    'Period of Performance Start Date','Period of Performance Current End Date',
   ];
   const agencyFilter = AGENCY_PRESETS[selectedKey];
   const resolvedAgencies = searchExtra.agencies || (agencyFilter || undefined);
@@ -3427,6 +4035,7 @@ async function loadData() {
   fetching = true;
   document.getElementById('error-banner').style.display = 'none';
   document.getElementById('refresh-btn').textContent = 'SCANNING…';
+  setLoadProgress(70, 'Fetching contracts...');
 
   // Fire animation in parallel with fetch
   const [raw] = await Promise.allSettled([
@@ -3435,6 +4044,7 @@ async function loadData() {
   ]);
 
   if (raw.status === 'fulfilled') {
+    setLoadProgress(88, 'Processing data...');
     allContracts = raw.value.map((item, i) => ({
       ...item, _id: item.generated_internal_id || String(i),
       _amt: parseFloat(item['Award Amount']) || 0,
@@ -3443,10 +4053,15 @@ async function loadData() {
     initTimeline();
     applyFilter();
     renderTopMovers();
+    setLoadProgress(100, 'Ready');
     document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
     document.getElementById('loading').style.display = 'none';
   } else {
     console.error(raw.reason);
+    const err = raw.reason;
+    const code = err.status ? ` [${err.status}]` : (err.code ? ` [${err.code}]` : '');
+    setLoadProgress(100, 'Load failed', `${err.message || 'Network error'}${code}`);
+    showLoadError(`${err.message || 'Failed to fetch contracts'}${code}`);
     document.getElementById('loading').style.display = 'none';
     const eb = document.getElementById('error-banner');
     eb.textContent = `Data load failed (${raw.reason.message}). Retrying in 60s.`;
@@ -3477,6 +4092,11 @@ document.getElementById('search-input').addEventListener('input', e => {
 document.getElementById('sort-select').addEventListener('change', e => { sortMode = e.target.value; applyFilter(); });
 document.getElementById('agency-filter-select').addEventListener('change', () => loadData());
 
+// ─── Admin state ──────────────────────────────────────────────────────────────
+let companyOverrides = {};
+let adminToken = sessionStorage.getItem('admin_token') || null;
+let isAdmin = !!adminToken;
+
 // ─── Token gate ───────────────────────────────────────────────────────────────
 function showTokenPrompt() {
   document.getElementById('loading').style.display = 'none';
@@ -3487,13 +4107,224 @@ function hideTokenPrompt() {
   document.getElementById('token-overlay').classList.remove('visible');
 }
 
+// ─── Admin ────────────────────────────────────────────────────────────────────
+async function fetchCompanyOverrides() {
+  try {
+    const r = await fetch('/api/admin/overrides');
+    if (r.ok) companyOverrides = await r.json();
+  } catch (_) {}
+}
+
+function openAdminPanel(prefillCompany) {
+  const modal = document.getElementById('admin-modal');
+  if (!modal) return;
+  modal.classList.add('open');
+  if (isAdmin) {
+    document.getElementById('admin-login-section').style.display = 'none';
+    document.getElementById('admin-manage-section').style.display = '';
+    renderAdminOverridesList();
+    if (prefillCompany) {
+      document.getElementById('admin-company-input').value = prefillCompany;
+      const ovr = companyOverrides[prefillCompany] || {};
+      document.getElementById('admin-ticker-input').value = ovr.ticker || '';
+      document.getElementById('admin-desc-input').value   = ovr.description || '';
+    }
+  } else {
+    document.getElementById('admin-login-section').style.display = '';
+    document.getElementById('admin-manage-section').style.display = 'none';
+    setTimeout(() => document.getElementById('admin-pw-input').focus(), 80);
+  }
+}
+
+function closeAdminPanel() {
+  document.getElementById('admin-modal').classList.remove('open');
+}
+
+function adminActivate(token) {
+  adminToken = token;
+  isAdmin    = true;
+  sessionStorage.setItem('admin_token', token);
+  document.getElementById('admin-login-section').style.display  = 'none';
+  document.getElementById('admin-manage-section').style.display = '';
+  const badge = document.getElementById('admin-badge');
+  if (badge) badge.classList.add('active');
+  renderAdminOverridesList();
+  if (currentWatchCompany) injectAdminCompanyButtons(currentWatchCompany);
+}
+
+function checkAdminUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('admin_token');
+  const err    = params.get('admin_error');
+  if (token || err) {
+    // Clean URL immediately
+    const clean = window.location.pathname + window.location.hash;
+    history.replaceState(null, '', clean);
+  }
+  if (token) {
+    adminActivate(token);
+    openAdminPanel();
+  } else if (err) {
+    openAdminPanel();
+    const errEl = document.getElementById('admin-login-err');
+    if (errEl) errEl.textContent = 'GitHub login failed: ' + err.replace(/_/g, ' ');
+  }
+}
+
+function adminLogout() {
+  adminToken = null;
+  isAdmin    = false;
+  sessionStorage.removeItem('admin_token');
+  const badge = document.getElementById('admin-badge');
+  if (badge) badge.classList.remove('active');
+  closeAdminPanel();
+  // Remove any injected admin buttons
+  document.querySelectorAll('.admin-edit-btn').forEach(b => b.remove());
+}
+
+function renderAdminOverridesList() {
+  const el = document.getElementById('admin-overrides-list');
+  if (!el) return;
+  const keys = Object.keys(companyOverrides);
+  if (!keys.length) { el.textContent = 'No overrides set.'; return; }
+  el.innerHTML = keys.map(name => {
+    const ovr  = companyOverrides[name];
+    const tags = [
+      ovr.ticker      ? `<span class="admin-ovr-tag ticker">${ovr.ticker}</span>` : '',
+      ovr.description ? `<span class="admin-ovr-tag desc">desc</span>` : '',
+    ].join('');
+    const safeName = name.replace(/"/g, '&quot;');
+    return `<div class="admin-ovr-row">
+      <span class="admin-ovr-name" title="${safeName}">${name}</span>
+      <span class="admin-ovr-tags">${tags}</span>
+      <span class="admin-ovr-edit" onclick="adminPrefill(${JSON.stringify(name)})">✎</span>
+    </div>`;
+  }).join('');
+}
+
+function adminPrefill(name) {
+  const ovr = companyOverrides[name] || {};
+  document.getElementById('admin-company-input').value = name;
+  document.getElementById('admin-ticker-input').value  = ovr.ticker      || '';
+  document.getElementById('admin-desc-input').value    = ovr.description || '';
+  document.getElementById('admin-save-status').textContent = '';
+  document.getElementById('admin-company-input').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function adminSaveOverride() {
+  const status  = document.getElementById('admin-save-status');
+  const company = document.getElementById('admin-company-input').value.trim();
+  const ticker  = document.getElementById('admin-ticker-input').value.trim();
+  const desc    = document.getElementById('admin-desc-input').value.trim();
+  if (!company) { status.textContent = 'Company name required'; status.className = 'admin-status err'; return; }
+  status.textContent = 'Saving…'; status.className = 'admin-status';
+  try {
+    const r = await fetch('/api/admin/overrides', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ company, ticker: ticker || '', description: desc || '' }),
+    });
+    if (r.status === 401) { status.textContent = 'Session expired — sign in again'; status.className = 'admin-status err'; adminLogout(); return; }
+    if (!r.ok) { const e = await r.json(); status.textContent = 'Error: ' + e.error; status.className = 'admin-status err'; return; }
+    const { overrides } = await r.json();
+    companyOverrides = overrides;
+    status.textContent = 'Saved'; status.className = 'admin-status ok';
+    renderAdminOverridesList();
+    // Bust wiki cache and refresh if company panel is open
+    if (currentWatchCompany === company) {
+      delete wikiCache[company];
+      fetchWikiData(company).then(populateWikiSection);
+      const input = document.getElementById('cp-ticker-input');
+      if (input && ticker) { input.value = ticker; refreshStockPrice(company); }
+    }
+  } catch (e) { status.textContent = 'Error: ' + e.message; status.className = 'admin-status err'; }
+}
+
+async function adminDeleteOverride() {
+  const status  = document.getElementById('admin-save-status');
+  const company = document.getElementById('admin-company-input').value.trim();
+  if (!company) { status.textContent = 'Company name required'; status.className = 'admin-status err'; return; }
+  status.textContent = 'Deleting…'; status.className = 'admin-status';
+  try {
+    const r = await fetch('/api/admin/overrides', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+      body: JSON.stringify({ company, ticker: '', description: '' }),
+    });
+    if (r.status === 401) { status.textContent = 'Session expired'; status.className = 'admin-status err'; adminLogout(); return; }
+    if (!r.ok) { const e = await r.json(); status.textContent = 'Error: ' + e.error; status.className = 'admin-status err'; return; }
+    const { overrides } = await r.json();
+    companyOverrides = overrides;
+    document.getElementById('admin-ticker-input').value = '';
+    document.getElementById('admin-desc-input').value   = '';
+    status.textContent = 'Deleted'; status.className = 'admin-status ok';
+    renderAdminOverridesList();
+    if (currentWatchCompany === company) {
+      delete wikiCache[company];
+      fetchWikiData(company).then(populateWikiSection);
+    }
+  } catch (e) { status.textContent = 'Error: ' + e.message; status.className = 'admin-status err'; }
+}
+
+function injectAdminCompanyButtons(name) {
+  // Remove any stale buttons first
+  document.querySelectorAll('.admin-edit-btn').forEach(b => b.remove());
+  if (!isAdmin) return;
+  const wikiSection = document.getElementById('cp-wiki-section');
+  if (wikiSection) {
+    const btn = document.createElement('button');
+    btn.className = 'admin-edit-btn';
+    btn.textContent = '✎ Override';
+    btn.style.cssText = 'margin-top:8px;display:block';
+    btn.onclick = () => openAdminPanel(name);
+    wikiSection.appendChild(btn);
+  }
+  const stockRow = document.getElementById('cp-stock-row');
+  if (stockRow) {
+    const btn = document.createElement('button');
+    btn.className = 'admin-edit-btn';
+    btn.textContent = '✎';
+    btn.title = 'Save ticker as override for all users';
+    btn.onclick = () => {
+      const t = document.getElementById('cp-ticker-input')?.value.trim();
+      openAdminPanel(name);
+      if (t) setTimeout(() => { document.getElementById('admin-ticker-input').value = t; }, 50);
+    };
+    stockRow.appendChild(btn);
+  }
+}
+
+// Close admin modal on backdrop click
+document.getElementById('admin-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('admin-modal')) closeAdminPanel();
+});
+
+// Keyboard shortcut: Ctrl+Shift+A
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'A') { e.preventDefault(); openAdminPanel(currentWatchCompany || undefined); }
+});
+
+// Restore badge if session token already exists
+if (isAdmin) {
+  const badge = document.getElementById('admin-badge');
+  if (badge) badge.classList.add('active');
+}
+
+// Re-check session on visibility change (tab switch back) so expired tokens don't silently fail
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && isAdmin) fetchCompanyOverrides();
+});
+
 async function boot() {
   loadSettings(); // Apply saved settings before anything else
   restoreFromUrl();
+  checkAdminUrlParams();
   maybeShowDisclaimer();
   const token = localStorage.getItem('cesium_token');
   if (!token) { showTokenPrompt(); return; }
   document.getElementById('loading').style.display = 'flex';
+  setLoadProgress(5, 'Initializing...');
+  fetchCompanyOverrides(); // fire-and-forget; overrides ready before any panel opens
   try {
     await initCesium(token);
     await loadData();
@@ -3501,8 +4332,11 @@ async function boot() {
     if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
   } catch (e) {
     console.error('Cesium init failed:', e);
+    const code = e.status ? ` [${e.status}]` : (e.code ? ` [${e.code}]` : '');
+    showLoadError(`${e.message || 'Globe init failed'}${code}`);
+    setLoadProgress(100, 'Error');
     localStorage.removeItem('cesium_token');
-    showTokenPrompt();
+    setTimeout(() => showTokenPrompt(), 2500);
   }
 }
 
@@ -3522,6 +4356,7 @@ document.getElementById('token-submit').addEventListener('click', async () => {
   }
   try {
     document.getElementById('loading').style.display = 'flex';
+    setLoadProgress(5, 'Initializing...');
     hideTokenPrompt();
     await initCesium(token);
     localStorage.setItem('cesium_token', token);
@@ -3530,6 +4365,9 @@ document.getElementById('token-submit').addEventListener('click', async () => {
     if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
   } catch(e) {
     console.error('Token rejected:', e);
+    const code = e.status ? ` [${e.status}]` : (e.code ? ` [${e.code}]` : '');
+    showLoadError(`${e.message || 'Invalid token'}${code}`);
+    setLoadProgress(100, 'Error');
     localStorage.removeItem('cesium_token');
     document.getElementById('loading').style.display = 'none';
     showTokenPrompt();
