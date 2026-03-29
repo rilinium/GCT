@@ -3369,6 +3369,27 @@ const AGENCY_PRESETS = {
 };
 
 async function fetchContracts() {
+  const selectedKey = document.getElementById('agency-filter-select')?.value || 'all';
+  const searchExtra = parseSearch(query || '');
+  const isSearch = !!(searchExtra.keywords || searchExtra.place_of_performance_scope || searchExtra.agencies);
+
+  // ── Cached proxy path (non-search requests) ───────────────────────────────
+  if (!isSearch) {
+    const params = new URLSearchParams({
+      agency:  selectedKey,
+      daysIdx: CFG.daysIdx,
+      pages:   CFG.pages,
+    });
+    try {
+      const res = await fetch(`/api/contracts?${params}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.results) return json.results;
+      }
+    } catch (_) { /* fall through to direct */ }
+  }
+
+  // ── Direct USASpending path (search queries or proxy unavailable) ─────────
   const end = new Date(), start = new Date();
   start.setDate(end.getDate() - DAY_PRESETS[CFG.daysIdx]);
   const fmt = d => d.toISOString().split('T')[0];
@@ -3379,10 +3400,7 @@ async function fetchContracts() {
     'Place of Performance Country Code','Place of Performance Country Name',
     'generated_internal_id','NAICS Code','NAICS Description',
   ];
-  const selectedKey = document.getElementById('agency-filter-select')?.value || 'all';
   const agencyFilter = AGENCY_PRESETS[selectedKey];
-  const searchExtra = parseSearch(query || '');
-  // If search provides its own agencies override, let it win; otherwise use dropdown
   const resolvedAgencies = searchExtra.agencies || (agencyFilter || undefined);
   const filters = {
     award_type_codes: ['A','B','C','D'],
@@ -3394,7 +3412,6 @@ async function fetchContracts() {
       place_of_performance_locations: searchExtra.place_of_performance_locations,
     } : {}),
   };
-  const PAGES = CFG.pages;
   const fetchPage = async page => {
     const res = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/',
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3402,7 +3419,7 @@ async function fetchContracts() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()).results || [];
   };
-  const pages = await Promise.all(Array.from({ length: PAGES }, (_, i) => fetchPage(i + 1)));
+  const pages = await Promise.all(Array.from({ length: CFG.pages }, (_, i) => fetchPage(i + 1)));
   return pages.flat();
 }
 
