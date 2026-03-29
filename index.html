@@ -2874,7 +2874,7 @@ function renderCountryBody(body, contracts, fromApi, code) {
       <div class="cp-c-agency" style="opacity:.6">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
     </div>`).join('');
 
-  const safeCode = code ? JSON.stringify(code) : 'null';
+  const safeCode = code ? `'${code}'` : 'null';
   const sourceNote = fromApi
     ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From USASpending API · Since Oct 2007</div>`
     : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset</div>
