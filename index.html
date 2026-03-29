@@ -351,7 +351,18 @@
     #cp-price-change.up { color: #00ff88; }
     #cp-price-change.down { color: #ff4466; }
     #cp-market-state { font-size: 8px; color: rgba(255,255,255,.3); letter-spacing: 1px; margin-top: 2px; font-family: 'Share Tech Mono', monospace; }
-    #cp-yf-attribution { font-size: 8px; color: rgba(255,255,255,.2); font-family: 'Share Tech Mono', monospace; margin-top: 8px; letter-spacing: .5px; }
+    #cp-yf-attribution { margin-top: 10px; display: flex; align-items: center; gap: 6px; opacity: .35; }
+    #cp-yf-attribution img { height: 14px; width: auto; filter: grayscale(1) brightness(2); }
+    #cp-chart-wrap { margin-top: 10px; }
+    #cp-chart-svg { width: 100%; display: block; overflow: visible; }
+    .cp-range-btns { display: flex; gap: 4px; margin-top: 6px; }
+    .cp-range-btn {
+      flex: 1; padding: 3px 0; background: none; border: 1px solid rgba(var(--accent-rgb),.15);
+      color: rgba(255,255,255,.4); font-family: 'Share Tech Mono', monospace; font-size: 8px;
+      letter-spacing: 1px; border-radius: 2px; cursor: pointer; transition: all .12s;
+    }
+    .cp-range-btn:hover { border-color: rgba(var(--accent-rgb),.4); color: rgba(255,255,255,.7); }
+    .cp-range-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb),.08); }
     .cp-load-all-btn {
       width: 100%; margin-top: 10px; padding: 7px;
       background: rgba(var(--accent-rgb),.06); border: 1px solid rgba(var(--accent-rgb),.2);
@@ -1910,6 +1921,10 @@ async function openCompanyProfile(name) {
   nameEl.textContent = name;
   body.innerHTML = `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">Loading…</div>`;
   panel.classList.add('open');
+  // Inject company name into range buttons
+  panel.querySelectorAll('.cp-range-btn').forEach(btn => {
+    btn.setAttribute('onclick', btn.getAttribute('onclick').replace(/__NAME__/g, name.replace(/'/g, "\\'")));
+  });
 
   const stats   = buildCompanyStats(name);
   const maxAmt  = stats.agencies.length ? stats.agencies[0][1] : 1;
@@ -1944,12 +1959,26 @@ async function openCompanyProfile(name) {
       <div id="cp-stock-row">
         <input id="cp-ticker-input" type="text" placeholder="TICKER" maxlength="8" value="${cached}" oninput="this.value=this.value.toUpperCase()">
         <button id="cp-ticker-btn" onclick="refreshStockPrice('${safeName}')">↻ Load</button>
+        <span style="font-size:7px;color:rgba(255,255,255,.25);font-family:'Share Tech Mono',monospace;line-height:1.3;max-width:70px">auto-detected, verify ticker</span>
       </div>
       <div id="cp-stock-hint" class="cp-stock-hint"></div>
       <div id="cp-price-display"></div>
       <div id="cp-price-change"></div>
       <div id="cp-market-state"></div>
-      <div id="cp-yf-attribution">Data provided by <a href="https://finance.yahoo.com" target="_blank" style="color:rgba(255,255,255,.35);text-decoration:none">Yahoo Finance</a></div>
+      <div id="cp-chart-wrap" style="display:none">
+        <svg id="cp-chart-svg" viewBox="0 0 280 90" height="90" preserveAspectRatio="none"></svg>
+        <div class="cp-range-btns">
+          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','5d','1d')">1W</button>
+          <button class="cp-range-btn active" onclick="switchChartRange('__NAME__','1mo','1d')">1M</button>
+          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','3mo','1d')">3M</button>
+          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','6mo','1wk')">6M</button>
+          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','1y','1wk')">1Y</button>
+        </div>
+      </div>
+      <div id="cp-yf-attribution">
+        <span style="font-size:8px;font-family:'Share Tech Mono',monospace;letter-spacing:.5px">Data:</span>
+        <a href="https://finance.yahoo.com" target="_blank"><img src="https://s.yimg.com/rz/p/yahoo_finance_en-US_h_p_finance_2.png" alt="Yahoo Finance"></a>
+      </div>
     </div>
     <div class="cp-section" id="cp-summary-section">
       ${renderCompanySummaryHtml(stats, false)}
@@ -2012,6 +2041,86 @@ async function refreshStockPrice(companyName) {
     const states = { REGULAR: 'Market Open', PRE: 'Pre-Market', POST: 'After Hours', POSTPOST: 'After Hours', PREPRE: 'Pre-Market', CLOSED: 'Market Closed' };
     stateEl.textContent = states[data.marketState] || data.marketState || '';
   }
+  // Fetch and render chart (default 1M)
+  fetchAndRenderChart(ticker, '1mo', '1d', data.change >= 0);
+}
+
+async function fetchAndRenderChart(ticker, range, interval, isUp) {
+  try {
+    const r = await fetch(`/api/quote?ticker=${encodeURIComponent(ticker)}&range=${range}&interval=${interval}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    const result = d.chart?.result?.[0];
+    if (!result) return;
+    const closes     = result.indicators?.quote?.[0]?.close || [];
+    const timestamps = result.timestamp || [];
+    const pairs = closes.map((c, i) => ({ c, t: timestamps[i] })).filter(p => p.c != null);
+    if (pairs.length < 2) return;
+
+    // Layout: plot area left-aligned, right margin for price labels, bottom for dates
+    const PW = 232, PH = 66, PAD_T = 4, PAD_B = 16, PAD_R = 48;
+    const TW = PW + PAD_R, TH = PH + PAD_T + PAD_B;
+
+    const prices = pairs.map(p => p.c);
+    const minC = Math.min(...prices), maxC = Math.max(...prices), span = maxC - minC || 1;
+    const toX = i  => (i / (pairs.length - 1)) * PW;
+    const toY = c  => PAD_T + PH - ((c - minC) / span) * PH;
+
+    const pts    = pairs.map((p, i) => `${toX(i).toFixed(1)},${toY(p.c).toFixed(1)}`);
+    const color  = isUp ? '#00ff88' : '#ff4466';
+    const pathD  = `M${pts.join('L')}`;
+    const fillD  = `M0,${PAD_T + PH}L${pts.join('L')}L${PW},${PAD_T + PH}Z`;
+    const gradId = `cg${Date.now()}`;
+
+    // Horizontal grid lines at 0%, 33%, 67%, 100%
+    const gridLines = [0, 0.33, 0.67, 1].map(pct => {
+      const price = minC + pct * span;
+      const y = toY(price).toFixed(1);
+      return `<line x1="0" y1="${y}" x2="${PW}" y2="${y}" stroke="rgba(255,255,255,.07)" stroke-width="1" stroke-dasharray="3,3"/>
+              <text x="${PW + 4}" y="${(parseFloat(y) + 3).toFixed(0)}" font-size="7" fill="rgba(255,255,255,.4)" font-family="monospace">$${price.toFixed(0)}</text>`;
+    }).join('');
+
+    // Date labels on X axis
+    const fmtTs = ts => { const d = new Date(ts * 1000); return `${d.getMonth()+1}/${d.getDate()}`; };
+    const dateY = PAD_T + PH + PAD_B - 2;
+    const mid   = Math.floor(pairs.length / 2);
+    const dateLabels = `
+      <text x="0" y="${dateY}" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace">${fmtTs(pairs[0].t)}</text>
+      <text x="${(PW/2).toFixed(0)}" y="${dateY}" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace" text-anchor="middle">${fmtTs(pairs[mid].t)}</text>
+      <text x="${PW}" y="${dateY}" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace" text-anchor="end">${fmtTs(pairs[pairs.length-1].t)}</text>`;
+
+    const svg  = document.getElementById('cp-chart-svg');
+    const wrap = document.getElementById('cp-chart-wrap');
+    if (!svg || !wrap) return;
+
+    svg.setAttribute('viewBox', `0 0 ${TW} ${TH}`);
+    svg.setAttribute('height', TH);
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${gridLines}
+      <path d="${fillD}" fill="url(#${gradId})"/>
+      <path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dateLabels}`;
+    wrap.style.display = 'block';
+  } catch { /* silently skip */ }
+}
+
+async function switchChartRange(companyName, range, interval) {
+  // Update active button
+  document.querySelectorAll('.cp-range-btn').forEach(b => {
+    const r = b.getAttribute('onclick').match(/'([^']+)','([^']+)'\)/);
+    b.classList.toggle('active', r && r[1] === range);
+  });
+  const ticker = document.getElementById('cp-ticker-input')?.value;
+  if (!ticker) return;
+  const changeEl = document.getElementById('cp-price-change');
+  const isUp = changeEl ? changeEl.classList.contains('up') : true;
+  await fetchAndRenderChart(ticker, range, interval, isUp);
 }
 
 function closeCompanyProfile() {

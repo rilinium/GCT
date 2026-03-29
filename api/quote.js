@@ -13,7 +13,9 @@ export default async function handler(req, res) {
     }
 
     if (ticker) {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+      const range    = req.query.range    || '5d';
+      const interval = req.query.interval || '1d';
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${range}`;
       const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
       const data = await r.json();
       return res.status(200).json(data);
