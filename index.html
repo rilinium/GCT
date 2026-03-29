@@ -808,6 +808,55 @@
       letter-spacing: .5px;
     }
 
+    /* ── Disclaimer footer text ── */
+    #disclaimer-text {
+      font-size: 8px; color: #334433; letter-spacing: .5px; opacity: .7;
+      font-style: italic;
+    }
+
+    /* ── First-load disclaimer modal ── */
+    #disclaimer-overlay {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,.88); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #disclaimer-overlay.visible { display: flex; }
+    #disclaimer-modal {
+      background: rgba(0,4,18,.98); border: 1px solid rgba(255,200,0,.35);
+      border-radius: 6px; padding: 32px 36px; z-index: 91; width: 460px; max-width: 95vw;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 0 60px rgba(255,200,0,.1), 0 0 0 1px rgba(255,200,0,.06);
+      position: relative;
+    }
+    #disclaimer-modal::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #ffcc00, transparent);
+      border-radius: 6px 6px 0 0;
+    }
+    #disclaimer-modal .dm-label {
+      font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 900;
+      color: #ffcc00; letter-spacing: 5px; text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(255,200,0,.5); margin-bottom: 8px;
+    }
+    #disclaimer-modal h2 {
+      font-family: 'Orbitron', monospace; font-size: 15px; color: #eeddaa;
+      letter-spacing: 1px; margin-bottom: 14px; font-weight: 700;
+    }
+    #disclaimer-modal p {
+      font-size: 10px; color: #7a8a6a; line-height: 1.8; letter-spacing: .4px;
+      margin-bottom: 12px;
+    }
+    #disclaimer-modal p strong { color: #aabb88; }
+    #disclaimer-ack {
+      width: 100%; margin-top: 8px;
+      background: rgba(255,200,0,.1); border: 1px solid rgba(255,200,0,.4);
+      border-radius: 3px; color: #ffcc00; font-family: 'Orbitron', monospace;
+      font-size: 11px; padding: 12px; cursor: pointer; letter-spacing: 3px;
+      transition: background .15s, box-shadow .15s; text-transform: uppercase;
+      font-weight: 700;
+    }
+    #disclaimer-ack:hover { background: rgba(255,200,0,.2); box-shadow: 0 0 20px rgba(255,200,0,.25); }
+
     /* Reset button */
     #settings-reset {
       margin: 16px 20px 0;
@@ -824,6 +873,17 @@
 
 <div id="loading"><div class="spinner"></div><p>Initializing globe...</p></div>
 <div id="cesiumContainer"></div>
+
+<!-- First-load disclaimer modal -->
+<div id="disclaimer-overlay">
+<div id="disclaimer-modal">
+  <div class="dm-label">Notice</div>
+  <h2>Data Disclaimer</h2>
+  <p>The contract data displayed on this tracker may be <strong>incorrect, incomplete, or outdated</strong>. Information is sourced from public government databases and may not reflect the current state of any contract, award, or agency relationship.</p>
+  <p>This tool is intended for <strong>informational purposes only</strong>. Do not rely on this data for legal, financial, or procurement decisions.</p>
+  <button id="disclaimer-ack" onclick="dismissDisclaimer()">I Understand</button>
+</div>
+</div>
 
 <!-- Token prompt overlay -->
 <div id="token-overlay">
@@ -1125,6 +1185,18 @@
             <option value="name">Name</option>
           </select>
         </div>
+
+        <div class="s-row s-slider-row">
+          <div class="s-slider-top">
+            <span class="s-label">Text scale</span>
+            <span class="s-value" id="sv-textScale">100%</span>
+          </div>
+          <input type="range" class="s-slider" id="si-textScale" min="80" max="130" step="5" value="100"
+            oninput="updateSlider('textScale', this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:#334433;margin-top:2px">
+            <span>80%</span><span>100%</span><span>130%</span>
+          </div>
+        </div>
       </div>
 
       <button id="settings-reset" onclick="resetSettings()">⟳ Reset to Defaults</button>
@@ -1147,9 +1219,21 @@
     <div class="leg"><div class="leg-dot" style="background:#00aaff"></div>Agency</div>
   </div>
   <div id="last-updated">Last updated: —</div>
+  <div id="disclaimer-text">Data may be incorrect, incomplete, or outdated.</div>
 </div>
 
 <script>
+// ─── Disclaimer modal ─────────────────────────────────────────────────────────
+function dismissDisclaimer() {
+  document.getElementById('disclaimer-overlay').classList.remove('visible');
+  localStorage.setItem('gct_disclaimer_seen', '1');
+}
+function maybeShowDisclaimer() {
+  if (!localStorage.getItem('gct_disclaimer_seen')) {
+    document.getElementById('disclaimer-overlay').classList.add('visible');
+  }
+}
+
 // ─── Config ──────────────────────────────────────────────────────────────────
 window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
 
@@ -1398,6 +1482,7 @@ const DEFAULT_SETTINGS = {
   hubs: true, arcs: true, arcOpacity: 35, scanlines: true,
   accent: '#00ff88',
   sort: 'amount',
+  textScale: 100,
   experimental: false,
 };
 let CFG = { ...DEFAULT_SETTINGS };
@@ -1445,6 +1530,9 @@ function applyAllSettings() {
   clearInterval(refreshTimer);
   if (CFG.refreshSec > 0) refreshTimer = setInterval(loadData, CFG.refreshSec * 1000);
 
+  // Text scale
+  applyTextScale();
+
   // Experimental mode (must run before syncSettingsUI so slider max is set correctly)
   applyExperimental(CFG.experimental);
 
@@ -1464,6 +1552,7 @@ function syncSettingsUI() {
   set('si-arcOpacity', CFG.arcOpacity);
   setCheck('si-scanlines', CFG.scanlines);
   set('si-sort', CFG.sort);
+  set('si-textScale', CFG.textScale);
   setCheck('si-experimental', CFG.experimental);
   // Display values
   updateDisplayValues();
@@ -1477,6 +1566,7 @@ function updateDisplayValues() {
   if (el('sv-days'))       el('sv-days').textContent       = DAY_PRESETS[CFG.daysIdx] + ' days';
   if (el('sv-rotation'))   el('sv-rotation').textContent   = ROT_LABELS[CFG.rotIdx];
   if (el('sv-arcOpacity')) el('sv-arcOpacity').textContent = CFG.arcOpacity + '%';
+  if (el('sv-textScale'))  el('sv-textScale').textContent  = CFG.textScale + '%';
 }
 
 function applyExperimental(on) {
@@ -1510,10 +1600,12 @@ function updateSlider(key, rawVal) {
   if (key === 'days')       { CFG.daysIdx = v;    }
   if (key === 'rotation')   { CFG.rotIdx = v;     }
   if (key === 'arcOpacity') { CFG.arcOpacity = v; }
+  if (key === 'textScale')  { CFG.textScale = v;  }
   updateDisplayValues();
   saveSettings();
   // Live-apply non-fetch settings immediately
   if (key === 'rotation' || key === 'arcOpacity') applyLiveSettings();
+  if (key === 'textScale') applyTextScale();
 }
 
 function updateSetting(key, val) {
@@ -1533,6 +1625,14 @@ function updateSetting(key, val) {
 function applyLiveSettings() {
   // arc opacity re-renders globe live
   if (filtered.length) { renderGlobe(filtered); if (viewer) viewer.scene.requestRender(); }
+}
+
+function applyTextScale() {
+  const scale = CFG.textScale / 100;
+  ['header','stats-bar','sidebar','company-panel','country-panel','detail-panel','footer','settings-overlay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.zoom = scale;
+  });
 }
 
 function setAccent(hex, el) {
@@ -2856,6 +2956,7 @@ function hideTokenPrompt() {
 
 async function boot() {
   loadSettings(); // Apply saved settings before anything else
+  maybeShowDisclaimer();
   const token = localStorage.getItem('cesium_token');
   if (!token) { showTokenPrompt(); return; }
   document.getElementById('loading').style.display = 'flex';
