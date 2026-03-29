@@ -2598,28 +2598,30 @@ function renderGlobe(contracts) {
   polylineCollection.removeAll();
   labelCollection.removeAll();
 
-  // Spread overlapping contract dots (cap O(n²) to first 300)
+  // Spread overlapping contract dots using grid bucketing + golden spiral (O(n))
   const pts = contracts.map(c => {
     const [lat, lng] = getCoords(c);
     return { lat, lng, c };
   });
-  const SPREAD = 0.55;
-  const SPREAD_CAP = Math.min(pts.length, 300);
-  for (let i = 0; i < SPREAD_CAP; i++) {
-    for (let j = i + 1; j < SPREAD_CAP; j++) {
-      const dLat = pts[j].lat - pts[i].lat, dLng = pts[j].lng - pts[i].lng;
-      const dist = Math.sqrt(dLat*dLat + dLng*dLng);
-      if (dist < SPREAD && dist > 0.0001) {
-        const push = (SPREAD - dist) / 2;
-        const nx = dLat/dist, ny = dLng/dist;
-        pts[i].lat -= nx*push*0.5; pts[i].lng -= ny*push*0.5;
-        pts[j].lat += nx*push*0.5; pts[j].lng += ny*push*0.5;
-      } else if (dist <= 0.0001) {
-        const a = (j / pts.length) * 2 * Math.PI;
-        pts[j].lat += Math.cos(a)*SPREAD*0.4; pts[j].lng += Math.sin(a)*SPREAD*0.4;
-      }
-    }
-  }
+  const CELL = 0.4; // grid cell size in degrees
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const grid = new Map();
+  pts.forEach((pt, i) => {
+    const key = `${Math.round(pt.lat / CELL)},${Math.round(pt.lng / CELL)}`;
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key).push(i);
+  });
+  grid.forEach(indices => {
+    const n = indices.length;
+    if (n <= 1) return;
+    const maxR = Math.min(0.25 * Math.sqrt(n), 2.5);
+    indices.forEach((idx, i) => {
+      const r = maxR * Math.sqrt(i / n);
+      const theta = i * 2 * Math.PI / (PHI * PHI);
+      pts[idx].lat += r * Math.cos(theta);
+      pts[idx].lng += r * Math.sin(theta);
+    });
+  });
 
   // Unique agency hubs at their actual real-world coordinates
   const agencyMap = new Map();
@@ -3693,7 +3695,24 @@ document.getElementById('contracts-list').addEventListener('click', e => {
     return;
   }
   const card = e.target.closest('.contract-card');
-  if (card) focusContract(card.dataset.id);
+  if (card) {
+    const id = card.dataset.id;
+    focusContract(id);
+    const c = allContracts.find(x => x._id === id);
+    if (c) {
+      const city = c['Place of Performance City Name'] || '';
+      const st   = c['Place of Performance State Code'] || c['Place of Performance Country Code'] || '';
+      showDetail({
+        contractId: c._id,
+        recipient:  c['Recipient Name'] || 'Unknown',
+        amount:     c._amt,
+        agency:     c['Awarding Sub Agency'] || c['Awarding Agency'] || '—',
+        loc:        [city, st].filter(Boolean).join(', ') || '—',
+        date:       fmtDate(c['Last Modified Date']),
+        desc:       (c['Description'] || '').slice(0, 90) + ((c['Description'] || '').length > 90 ? '…' : ''),
+      });
+    }
+  }
 });
 
 // ─── Detail panel ─────────────────────────────────────────────────────────────
