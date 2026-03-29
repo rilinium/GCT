@@ -323,6 +323,34 @@
     #company-body::-webkit-scrollbar { width: 2px; }
     #company-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),.3); border-radius: 1px; }
     .cp-section { padding: 12px 14px; border-bottom: 1px solid rgba(var(--accent-rgb),.06); }
+
+    /* ── Company Wiki section ── */
+    #cp-wiki-section { display: flex; flex-direction: column; gap: 10px; }
+    #cp-wiki-logo-wrap {
+      display: flex; align-items: center; gap: 12px;
+    }
+    #cp-wiki-company-logo {
+      width: 52px; height: 52px; object-fit: contain; border-radius: 4px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      padding: 4px; flex-shrink: 0;
+    }
+    #cp-wiki-company-name-sub {
+      font-family: 'Orbitron', monospace; font-size: 8px; color: rgba(var(--accent-rgb),.5);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    #cp-wiki-desc {
+      font-size: 9px; color: #7a9a88; line-height: 1.7; letter-spacing: .3px;
+    }
+    #cp-wiki-attr {
+      display: flex; align-items: center; gap: 5px;
+    }
+    #cp-wiki-attr a {
+      display: flex; align-items: center;
+      text-decoration: none; opacity: .5; transition: opacity .15s;
+    }
+    #cp-wiki-attr a:hover { opacity: 1; }
+    #cp-wiki-attr img { width: 18px; height: 18px; }
+
     .cp-section-title {
       font-family: 'Orbitron', monospace; font-size: 7px; font-weight: 700;
       color: var(--accent); letter-spacing: 3px; text-transform: uppercase;
@@ -1970,6 +1998,116 @@ function renderSidebar(contracts) {
 
 // ─── Company Profile ─────────────────────────────────────────────────────────
 const companyTickerCache = {};
+const wikiCache = {};
+
+// Returns true only if the Wikipedia article is plausibly about this company
+function wikiArticleMatchesCompany(data, companyName) {
+  if (!data || data.type === 'disambiguation') return false;
+  const strip = /\b(corporation|corp|company|co|inc|llc|ltd|the|group|systems|technologies|technology|defense|services|solutions|international|global|national|united|american|holdings|partners|associates|mobility|industries|industries|enterprises)\b/gi;
+  const meaningfulWords = companyName.toLowerCase().replace(strip, '').trim()
+    .split(/\s+/).filter(w => w.length > 2);
+  if (!meaningfulWords.length) return false;
+  const articleTitle = (data.title || '').toLowerCase();
+  const matchCount = meaningfulWords.filter(w => articleTitle.includes(w)).length;
+  // Require 2+ matches for longer names, 1 for short ones
+  const required = meaningfulWords.length >= 3 ? 2 : 1;
+  return matchCount >= required;
+}
+
+async function fetchWikiData(companyName) {
+  if (wikiCache[companyName] !== undefined) return wikiCache[companyName];
+  try {
+    // Try direct title lookup, fall back to search
+    let res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(companyName)}`);
+    let wikiTitle = null;
+    if (!res.ok) {
+      const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(companyName)}&format=json&origin=*&srlimit=1`);
+      const sd = await sr.json();
+      const hit = sd?.query?.search?.[0];
+      if (!hit) { wikiCache[companyName] = null; return null; }
+      wikiTitle = hit.title;
+      res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`);
+      if (!res.ok) { wikiCache[companyName] = null; return null; }
+    }
+    const data = await res.json();
+
+    // Reject if the article doesn't match the company name
+    if (!wikiArticleMatchesCompany(data, companyName)) {
+      wikiCache[companyName] = null;
+      return null;
+    }
+    wikiTitle = wikiTitle || data.title;
+
+    let logoUrl = data.thumbnail?.source || null;
+
+    // If no thumbnail, search the article's images for a logo file
+    if (!logoUrl) {
+      try {
+        const imgListRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(wikiTitle)}&prop=images&format=json&origin=*`);
+        const imgListData = await imgListRes.json();
+        const images = Object.values(imgListData?.query?.pages || {})[0]?.images || [];
+        const genericLogos = ['commons-logo','wikipedia-logo','wikimedia','wikidata','edit-icon','question_mark','information icon'];
+        const logoFile = images.find(img => {
+          const t = img.title.toLowerCase();
+          return /logo/i.test(t) && !genericLogos.some(s => t.includes(s));
+        });
+        if (logoFile) {
+          const infoRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(logoFile.title)}&prop=imageinfo&iiprop=url&iiurlwidth=120&format=json&origin=*`);
+          const infoData = await infoRes.json();
+          const imgInfo = Object.values(infoData?.query?.pages || {})[0]?.imageinfo?.[0];
+          logoUrl = imgInfo?.thumburl || imgInfo?.url || null;
+        }
+      } catch(_) {}
+    }
+
+    const result = {
+      description: data.extract || null,
+      logoUrl,
+      pageUrl:     data.content_urls?.desktop?.page || null,
+      title:       data.title || companyName,
+    };
+    wikiCache[companyName] = result;
+    return result;
+  } catch(e) {
+    wikiCache[companyName] = null;
+    return null;
+  }
+}
+
+function populateWikiSection(data) {
+  const descEl  = document.getElementById('cp-wiki-desc');
+  const logoEl  = document.getElementById('cp-wiki-company-logo');
+  const attrEl  = document.getElementById('cp-wiki-attr');
+  const linkEl  = document.getElementById('cp-wiki-link');
+  const nameEl  = document.getElementById('cp-wiki-company-name-sub');
+  if (!descEl) return;
+
+  if (!data) {
+    descEl.textContent = 'No Wikipedia article found.';
+    descEl.style.color = 'rgba(255,255,255,.15)';
+    return;
+  }
+
+  // Description — cap to ~2 sentences
+  const sentences = (data.description || '').split(/(?<=[.!?])\s+/);
+  descEl.textContent = sentences.slice(0, 2).join(' ');
+  descEl.style.color = '';
+
+  // Logo
+  if (data.logoUrl && logoEl) {
+    logoEl.src = data.logoUrl;
+    logoEl.style.display = 'block';
+    logoEl.onerror = () => { logoEl.style.display = 'none'; };
+  }
+
+  if (nameEl && data.title) nameEl.textContent = data.title;
+
+  // Attribution link
+  if (attrEl && linkEl && data.pageUrl) {
+    linkEl.href = data.pageUrl;
+    attrEl.style.display = 'flex';
+  }
+}
 
 async function lookupTicker(companyName) {
   try {
@@ -2219,6 +2357,19 @@ async function openCompanyProfile(name) {
         <a href="https://finance.yahoo.com" target="_blank"><img src="https://s.yimg.com/rz/p/yahoo_finance_en-US_h_p_finance_2.png" alt="Yahoo Finance"></a>
       </div>
     </div>
+    <div class="cp-section" id="cp-wiki-section">
+      <div id="cp-wiki-logo-wrap">
+        <img id="cp-wiki-company-logo" alt="" style="display:none">
+        <div id="cp-wiki-company-name-sub"></div>
+      </div>
+      <div id="cp-wiki-desc" style="font-size:9px;color:rgba(255,255,255,.2);font-family:'Share Tech Mono',monospace">Loading description…</div>
+      <div id="cp-wiki-attr" style="display:none">
+        <a id="cp-wiki-link" href="" target="_blank" rel="noopener">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/18px-Wikipedia-logo-v2.svg.png" alt="Wikipedia">
+        </a>
+        <span style="font-size:7px;color:rgba(255,255,255,.25);font-family:'Share Tech Mono',monospace;line-height:1.3;max-width:80px">auto-matched, may be incorrect</span>
+      </div>
+    </div>
     <div class="cp-section" id="cp-summary-section">
       ${renderCompanySummaryHtml(stats, false)}
     </div>
@@ -2229,6 +2380,9 @@ async function openCompanyProfile(name) {
       ${renderCompanyContractsHtml(stats)}
     </div>
   `;
+
+  // Fetch Wikipedia data
+  fetchWikiData(name).then(populateWikiSection);
 
   // Auto-detect ticker if not cached
   if (!cached) {
