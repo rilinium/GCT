@@ -4234,7 +4234,7 @@ async function clearAllCache() {
 
 function normalizeUKContract(item, idx) {
   const d = item.item || item;
-  const value = parseFloat(d.value ?? d.awardedValue ?? d.contractValue ?? 0) || 0;
+  const value = parseFloat(d.value != null ? d.value : (d.awardedValue != null ? d.awardedValue : (d.contractValue != null ? d.contractValue : 0))) || 0;
   const supplier = d.suppliers?.[0]?.name || d.supplierName || '—';
   const org = d.organisations?.[0]?.name || d.buyerName || d.organisationName || '—';
   const loc = (d.location || '').toLowerCase().trim();
@@ -4415,7 +4415,7 @@ async function loadData() {
       ...item,
       agency: agencyKey,
       _id: item.generated_internal_id || item._id || String(i),
-      _amt: item._amt ?? parseFloat(item['Award Amount']) || 0,
+      _amt: item._amt != null ? item._amt : (parseFloat(item['Award Amount']) || 0),
     }));
 
     if (isSearch) {
