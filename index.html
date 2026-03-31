@@ -3139,10 +3139,13 @@ function renderCompanySummaryHtml(stats, fromApi) {
         <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent)">${stats.dateRange.from} → ${stats.dateRange.to}</div>
        </div>`
     : '';
-  const usaAttr = `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
-  const sourceNote = fromApi
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${usaAttr} · Since Oct 2007</div>`
-    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${usaAttr}</div>
+  const isUK = dataSource === 'uk';
+  const srcAttr = isUK
+    ? `<a href="https://www.contractsfinder.service.gov.uk" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Contracts Finder</a>`
+    : `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
+  const sourceNote = (fromApi || isUK)
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttr}${isUK ? '' : ' · Since Oct 2007'}</div>`
+    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttr}</div>
        <button class="cp-load-all-btn" onclick="loadAllCompanyContracts('${safeName}')">⬇ Load All from API</button>`;
   return `
     <div class="cp-section-title">Summary</div>
@@ -3626,10 +3629,13 @@ function renderCountryBody(body, contracts, fromApi, code) {
     </div>`).join('');
 
   const safeCode = code ? `'${code}'` : 'null';
-  const usaAttrCt = `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
-  const sourceNote = fromApi
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${usaAttrCt} · Since Oct 2007</div>`
-    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${usaAttrCt}</div>
+  const isUKCt = dataSource === 'uk';
+  const srcAttrCt = isUKCt
+    ? `<a href="https://www.contractsfinder.service.gov.uk" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Contracts Finder</a>`
+    : `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
+  const sourceNote = (fromApi || isUKCt)
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttrCt}${isUKCt ? '' : ' · Since Oct 2007'}</div>`
+    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttrCt}</div>
        <button class="cp-load-all-btn" id="ctp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
        <div id="ctp-api-progress" style="font-size:9px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:6px;letter-spacing:.5px"></div>`;
 
