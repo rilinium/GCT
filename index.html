@@ -2598,12 +2598,54 @@ async function initCesium(token) {
     if (!spinLocked) scheduleRotateResume();
   }, { passive: true });
 
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
   // Mobile touch: disable tilt so single-finger always rotates the globe cleanly
-  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+  if (isTouch) {
     const ctrl = viewer.scene.screenSpaceCameraController;
     ctrl.enableTilt = false;
     ctrl.inertiaSpin = 0.4;
     ctrl.inertiaZoom = 0.3;
+  }
+
+  // Trackpad improvements (desktop non-touch)
+  if (!isTouch) {
+    const ctrl = viewer.scene.screenSpaceCameraController;
+    ctrl.inertiaSpin = 0.9;   // smooth momentum after dragging
+    ctrl.inertiaZoom = 0.6;   // gentle deceleration on zoom
+
+    // Scale down small pixel-mode wheel events (trackpad) to prevent overly
+    // aggressive zoom. Mouse wheels fire large single events; trackpads fire
+    // many tiny ones. We batch them so each physical gesture feels similar.
+    const canvas = viewer.scene.canvas;
+    let dispatching = false;
+    let accum = 0, lastX = 0, lastY = 0, batchRaf = null;
+
+    canvas.addEventListener('wheel', e => {
+      if (dispatching) return;
+      // Only intercept trackpad-style events: pixel mode, small per-event delta
+      if (e.deltaMode !== 0 || Math.abs(e.deltaY) > 50) return;
+
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      accum += e.deltaY;
+      lastX = e.clientX; lastY = e.clientY;
+
+      if (batchRaf) return;
+      batchRaf = requestAnimationFrame(() => {
+        batchRaf = null;
+        if (Math.abs(accum) < 0.5) { accum = 0; return; }
+        dispatching = true;
+        canvas.dispatchEvent(new WheelEvent('wheel', {
+          deltaY: accum * 0.6, deltaX: 0, deltaZ: 0, deltaMode: 0,
+          clientX: lastX, clientY: lastY,
+          bubbles: true, cancelable: true,
+        }));
+        dispatching = false;
+        accum = 0;
+        viewer.scene.requestRender();
+      });
+    }, { capture: true, passive: false });
   }
 
   // Hover
