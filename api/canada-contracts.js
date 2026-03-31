@@ -1,5 +1,23 @@
-const DATASET_ID = 'd8f85d91-7dec-4fd1-8055-483b77225d8b';
 const BASE = 'https://open.canada.ca/data/en/api/3/action';
+// Known active resource IDs from the proactive disclosure - contracts dataset
+// (quarterly files; we try the most recent first and fall through on failure)
+const RESOURCE_IDS = [
+  'fac950c0-00d5-4ec1-a4d3-9cbebf98a305', // recent quarterly
+  '9ee895c5-9df5-4854-9285-9d2e6b90277b',
+  'd8f85d91-7dec-4fd1-8055-483b77225d8b', // dataset-level fallback
+];
+
+async function tryResource(resourceId, safeLimit, signal) {
+  const params = new URLSearchParams({ resource_id: resourceId, limit: safeLimit, sort: 'award_value desc' });
+  const r = await fetch(`${BASE}/datastore_search?${params}`, {
+    signal,
+    headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
+  });
+  if (!r.ok) throw new Error(`${r.status}`);
+  const data = await r.json();
+  if (!data.success) throw new Error('CKAN error');
+  return data.result?.records || [];
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -7,46 +25,31 @@ export default async function handler(req, res) {
 
   const { from, to, limit = 500 } = req.query;
   const safeLimit = Math.min(parseInt(limit) || 500, 1000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    // Step 1: get resource IDs from the dataset
-    const pkgRes = await fetch(`${BASE}/package_show?id=${DATASET_ID}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
-    });
-    if (!pkgRes.ok) return res.status(pkgRes.status).json({ error: `package_show ${pkgRes.status}` });
-    const pkg = await pkgRes.json();
-    const resources = (pkg.result?.resources || []).filter(r => r.datastore_active);
-    if (!resources.length) return res.status(404).json({ error: 'No active datastore resources found' });
-
-    // Use the most recently modified resource
-    resources.sort((a, b) => (b.last_modified || b.created || '').localeCompare(a.last_modified || a.created || ''));
-    const resourceId = resources[0].id;
-
-    // Step 2: query with datastore_search
-    const params = new URLSearchParams({
-      resource_id: resourceId,
-      limit: safeLimit,
-      sort: 'award_value desc',
-    });
-    if (from || to) {
-      // CKAN datastore_search doesn't support range filters natively — use q for basic text, or filters
-      // We'll fetch and filter on our side for date range (limit is already capped)
+    let records = null;
+    let lastErr = '';
+    for (const id of RESOURCE_IDS) {
+      try {
+        records = await tryResource(id, safeLimit, controller.signal);
+        break;
+      } catch (e) {
+        lastErr = e.message;
+      }
     }
+    clearTimeout(timeout);
 
-    const dataRes = await fetch(`${BASE}/datastore_search?${params}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
-    });
-    if (!dataRes.ok) return res.status(dataRes.status).json({ error: `datastore_search ${dataRes.status}` });
-    const data = await dataRes.json();
+    if (records === null) return res.status(502).json({ error: `All resources failed. Last: ${lastErr}` });
 
-    // Filter by date range if provided
     const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-    let records = data.result?.records || [];
     if (dateRe.test(from)) records = records.filter(r => (r.contract_date || '') >= from);
     if (dateRe.test(to))   records = records.filter(r => (r.contract_date || '') <= to);
 
     return res.status(200).json({ result: { records } });
   } catch (e) {
+    clearTimeout(timeout);
     return res.status(502).json({ error: e.message });
   }
 }
