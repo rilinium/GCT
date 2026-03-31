@@ -1469,6 +1469,10 @@
         <button class="stab" id="stab-watch" onclick="switchTab('watch')">WATCH</button>
       </div>
     </div>
+    <div style="display:flex;gap:4px;margin-bottom:7px">
+      <button id="dsrc-us" class="stab active" onclick="switchDataSource('us')">🇺🇸 US</button>
+      <button id="dsrc-uk" class="stab" onclick="switchDataSource('uk')">🇬🇧 UK</button>
+    </div>
     <div id="agency-filter-row">
       <select id="agency-filter-select">
         <option value="all" selected>All Agencies</option>
@@ -2105,7 +2109,24 @@ function ptSize(n) {
   if (n >= 1e7) return 8;  if (n >= 1e6) return 6; return 4;
 }
 function fmtDate(s) { return s ? s.slice(0, 10) : '—'; }
+const UK_REGION_COORDS = {
+  'london': [51.5074, -0.1278],
+  'south east': [51.2787, -0.5217],
+  'south west': [50.7208, -3.5303],
+  'east of england': [52.2405, 0.5039],
+  'east midlands': [52.8309, -1.3323],
+  'west midlands': [52.4862, -1.8904],
+  'yorkshire and the humber': [53.9582, -1.0811],
+  'yorkshire': [53.9582, -1.0811],
+  'north west': [53.6065, -2.6882],
+  'north east': [54.9783, -1.6178],
+  'wales': [52.1307, -3.7837],
+  'scotland': [56.4907, -4.2026],
+  'northern ireland': [54.6079, -5.9264],
+};
+
 function getCoords(c) {
+  if (c._lat != null && c._lng != null) return [c._lat, c._lng];
   const st = c['Place of Performance State Code'];
   const cc = c['Place of Performance Country Code'];
   if (st && US_STATES[st]) return US_STATES[st];
@@ -2462,6 +2483,7 @@ let filtered = [];
 let activeId = null;
 let query = '';
 let sortMode = 'amount';
+let dataSource = 'us';
 let autoRotate = true;
 let spinLocked = false; // true = user explicitly paused
 
@@ -4210,6 +4232,70 @@ async function clearAllCache() {
   });
 }
 
+function normalizeUKContract(item, idx) {
+  const d = item.item || item;
+  const value = parseFloat(d.value ?? d.awardedValue ?? d.contractValue ?? 0) || 0;
+  const supplier = d.suppliers?.[0]?.name || d.supplierName || '—';
+  const org = d.organisations?.[0]?.name || d.buyerName || d.organisationName || '—';
+  const loc = (d.location || '').toLowerCase().trim();
+  const coordKey = Object.keys(UK_REGION_COORDS).find(k => loc === k || loc.includes(k));
+  const coords = coordKey ? UK_REGION_COORDS[coordKey] : null;
+  const published = (d.publishedDate || d.awardedDate || d.noticeDate || '').slice(0, 10);
+  const id = d.noticeIdentifier || d.id || `uk_${idx}`;
+  const cpv = d.cpvCodes?.[0] || {};
+  return {
+    'Award ID': id,
+    'Recipient Name': supplier,
+    'Award Amount': value,
+    'Description': d.title || d.noticeSummary || '—',
+    'Awarding Agency': org,
+    'Awarding Sub Agency': '',
+    'Last Modified Date': published,
+    'Place of Performance Country Code': 'GBR',
+    'Place of Performance Country Name': 'United Kingdom',
+    'Place of Performance City Name': d.location || '',
+    'Place of Performance State Code': '',
+    'NAICS Code': cpv.code || '',
+    'NAICS Description': cpv.text || cpv.description || '',
+    'generated_internal_id': id,
+    '_source': 'uk',
+    '_lat': coords?.[0] ?? null,
+    '_lng': coords?.[1] ?? null,
+  };
+}
+
+async function fetchUKContracts() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - DAY_PRESETS[CFG.daysIdx]);
+  const fmt = d => d.toISOString().split('T')[0];
+  const all = [];
+  for (let page = 0; page < CFG.pages; page++) {
+    const params = new URLSearchParams({
+      noticeType: 'AWARD', publishedFrom: fmt(start), publishedTo: fmt(end),
+      page, size: 100, order: 'NewestFirst',
+    });
+    const res = await fetch(`https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json?${params}`);
+    if (!res.ok) throw new Error(`Contracts Finder HTTP ${res.status}`);
+    const json = await res.json();
+    const results = json.results || [];
+    results.forEach((item, i) => all.push(normalizeUKContract(item, all.length + i)));
+    if (results.length < 100) break;
+  }
+  return all;
+}
+
+function switchDataSource(src) {
+  if (src === dataSource) return;
+  dataSource = src;
+  allContracts = []; filtered = [];
+  renderGlobe([]); renderSidebar([]);
+  document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
+  document.getElementById('dsrc-us').classList.toggle('active', src === 'us');
+  document.getElementById('dsrc-uk').classList.toggle('active', src === 'uk');
+  loadData();
+}
+
 async function fetchContracts(opts = {}) {
   const selectedKey = document.getElementById('agency-filter-select')?.value || 'all';
   const searchExtra = parseSearch(query || '');
@@ -4277,9 +4363,11 @@ async function loadData() {
   document.getElementById('refresh-btn').textContent = 'SCANNING…';
   setLoadProgress(70, 'Fetching contracts...');
 
-  const agencyKey = document.getElementById('agency-filter-select')?.value || 'all';
+  const agencyKey = dataSource === 'uk'
+    ? 'uk_all'
+    : (document.getElementById('agency-filter-select')?.value || 'all');
   const searchExtra = parseSearch(query || '');
-  const isSearch = !!(searchExtra.keywords || searchExtra.place_of_performance_scope || searchExtra.agencies);
+  const isSearch = dataSource === 'us' && !!(searchExtra.keywords || searchExtra.place_of_performance_scope || searchExtra.agencies);
 
   const windowStart = new Date();
   windowStart.setDate(windowStart.getDate() - DAY_PRESETS[CFG.daysIdx]);
@@ -4310,14 +4398,14 @@ async function loadData() {
   const newestCached = (!isSearch && cached.length)
     ? cached.map(c => c['Last Modified Date']).filter(Boolean).sort().pop()
     : null;
-  const isFullMiss = !newestCached || newestCached < windowStartStr;
+  const isFullMiss = dataSource === 'uk' || !newestCached || newestCached < windowStartStr;
   const fetchOpts = (!isSearch && !isFullMiss)
     ? { startDate: newestCached, sort: 'Last Modified Date' }
     : {};
 
   // Fire animation in parallel with fetch
   const [raw] = await Promise.allSettled([
-    fetchContracts(fetchOpts),
+    dataSource === 'uk' ? fetchUKContracts() : fetchContracts(fetchOpts),
     playRefreshAnimation(),
   ]);
 
@@ -4326,8 +4414,8 @@ async function loadData() {
     const incoming = raw.value.map((item, i) => ({
       ...item,
       agency: agencyKey,
-      _id: item.generated_internal_id || String(i),
-      _amt: parseFloat(item['Award Amount']) || 0,
+      _id: item.generated_internal_id || item._id || String(i),
+      _amt: item._amt ?? parseFloat(item['Award Amount']) || 0,
     }));
 
     if (isSearch) {
