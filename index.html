@@ -4298,49 +4298,27 @@ async function fetchUKContracts() {
 }
 
 // ─── Canada (Open Government proactive disclosure) ────────────────────────────
-const CA_PROVINCE_COORDS = {
-  // Full names
-  'ontario': [51.2538, -85.3232],
-  'quebec': [52.9399, -73.5491],
-  'québec': [52.9399, -73.5491],
-  'british columbia': [53.7267, -127.6476],
-  'alberta': [53.9333, -116.5765],
-  'manitoba': [56.4150, -98.7390],
-  'saskatchewan': [52.9399, -106.4509],
-  'nova scotia': [44.6820, -63.7443],
-  'new brunswick': [46.5653, -66.4619],
-  'newfoundland and labrador': [53.1355, -57.6604],
-  'newfoundland': [53.1355, -57.6604],
-  'prince edward island': [46.5107, -63.4168],
-  'northwest territories': [64.8255, -124.8457],
-  'nunavut': [70.2998, -83.1076],
-  'yukon': [64.2823, -135.0000],
-  'national capital region': [45.4215, -75.6972],
-  // 2-letter codes
-  'on': [51.2538, -85.3232],
-  'qc': [52.9399, -73.5491],
-  'bc': [53.7267, -127.6476],
-  'ab': [53.9333, -116.5765],
-  'mb': [56.4150, -98.7390],
-  'sk': [52.9399, -106.4509],
-  'ns': [44.6820, -63.7443],
-  'nb': [46.5653, -66.4619],
-  'nl': [53.1355, -57.6604],
-  'pe': [46.5107, -63.4168],
-  'nt': [64.8255, -124.8457],
-  'nu': [70.2998, -83.1076],
-  'yt': [64.2823, -135.0000],
-  // Major cities
-  'ottawa': [45.4215, -75.6972],
-  'toronto': [43.6532, -79.3832],
-  'vancouver': [49.2827, -123.1207],
-  'montreal': [45.5017, -73.5673],
-  'montréal': [45.5017, -73.5673],
-  'calgary': [51.0447, -114.0719],
-  'edmonton': [53.5461, -113.4938],
-  'winnipeg': [49.8951, -97.1384],
-  'halifax': [44.6488, -63.5752],
-  'gatineau': [45.4765, -75.7013],
+// FSA first-letter → province approximate centre coords
+// (vendor location data is only the 3-char postal FSA prefix, e.g. "K2J")
+const CA_FSA_LETTER_COORDS = {
+  A: [47.5615, -52.7126],  // Newfoundland & Labrador
+  B: [44.6820, -63.7443],  // Nova Scotia
+  C: [46.5107, -63.4168],  // Prince Edward Island
+  E: [46.5653, -66.4619],  // New Brunswick
+  G: [46.8139, -71.2080],  // Quebec (Quebec City / east)
+  H: [45.5017, -73.5673],  // Quebec (Montreal)
+  J: [45.4000, -74.1500],  // Quebec (southwest / Gatineau)
+  K: [45.2500, -76.2000],  // Ontario (east / Ottawa region)
+  L: [43.8000, -79.4000],  // Ontario (central / GTA)
+  M: [43.6532, -79.3832],  // Ontario (Toronto)
+  N: [43.0000, -81.0000],  // Ontario (southwest)
+  P: [47.0000, -82.0000],  // Ontario (north)
+  R: [49.8951, -97.1384],  // Manitoba
+  S: [52.1332, -106.6700], // Saskatchewan
+  T: [51.0447, -114.0719], // Alberta
+  V: [49.2827, -123.1207], // British Columbia
+  X: [63.0000, -113.0000], // NWT / Nunavut
+  Y: [64.2823, -135.0000], // Yukon
 };
 
 function normalizeCAContract(item, idx) {
@@ -4349,14 +4327,13 @@ function normalizeCAContract(item, idx) {
   ) || 0;
   const vendor = item.vendor_name || '—';
   const desc = item.description_en || item.description_fr || '—';
-  const org = item.owner_org_title || item.owner_org || '—';
+  const org = (item.owner_org_title || item.owner_org || '—').split('|')[0].trim();
   const date = (item.contract_date || item.contract_period_start || '').slice(0, 10);
-  // vendor_city / vendor_province fields exist in this dataset
-  const rawLoc = (item.vendor_province || item.vendor_city || '').toLowerCase().trim();
-  const coordKey = Object.keys(CA_PROVINCE_COORDS).find(k => rawLoc === k || rawLoc.includes(k));
-  const coords = coordKey ? CA_PROVINCE_COORDS[coordKey] : [56.1304, -106.3468];
+  // Only location data available is the 3-char FSA postal prefix (e.g. "K2J")
+  // First letter maps to province/region
+  const fsa = (item.vendor_postal_code || '').trim().toUpperCase();
+  const coords = CA_FSA_LETTER_COORDS[fsa[0]] || [56.1304, -106.3468];
   const id = item.reference_number || item.procurement_id || `ca_${idx}`;
-  const locationLabel = [item.vendor_city, item.vendor_province].filter(Boolean).join(', ') || '';
   return {
     'Award ID': id,
     'Recipient Name': vendor,
@@ -4367,8 +4344,8 @@ function normalizeCAContract(item, idx) {
     'Last Modified Date': date,
     'Place of Performance Country Code': 'CAN',
     'Place of Performance Country Name': 'Canada',
-    'Place of Performance City Name': locationLabel,
-    'Place of Performance State Code': item.vendor_province || '',
+    'Place of Performance City Name': fsa || '',
+    'Place of Performance State Code': fsa ? fsa[0] : '',
     'NAICS Code': item.commodity_type || '',
     'NAICS Description': '',
     'generated_internal_id': id,
