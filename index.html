@@ -4319,19 +4319,26 @@ const CA_PROVINCE_COORDS = {
 };
 
 function normalizeCAContract(item, idx) {
-  const value = parseFloat(item.award_value) || 0;
-  const province = (item.vendor_province || item.vendor_city || '').toLowerCase().trim();
+  const value = parseFloat(
+    item.contract_value ?? item.original_value ?? item.award_value ??
+    item.total_value ?? item.amendment_value ?? 0
+  ) || 0;
+  const vendor = item.vendor_name || item.supplier_name || item.vendor || '—';
+  const desc = item.description_en || item.description || item.comments_en || '—';
+  const org = item.owner_org_title || item.department || item.organization || '—';
+  const date = (item.contract_date || item.award_date || item.start_date || '').slice(0, 10);
+  const province = (item.vendor_province || item.delivery_province || item.vendor_city || '').toLowerCase().trim();
   const coordKey = Object.keys(CA_PROVINCE_COORDS).find(k => province === k || province.includes(k));
   const coords = coordKey ? CA_PROVINCE_COORDS[coordKey] : [56.1304, -106.3468];
-  const id = item.reference_number || `ca_${idx}`;
+  const id = item.reference_number || item.contract_number || `ca_${idx}`;
   return {
     'Award ID': id,
-    'Recipient Name': item.vendor_name || '—',
+    'Recipient Name': vendor,
     'Award Amount': value,
-    'Description': item.description_en || '—',
-    'Awarding Agency': item.owner_org_title || '—',
+    'Description': desc,
+    'Awarding Agency': org,
     'Awarding Sub Agency': '',
-    'Last Modified Date': (item.contract_date || '').slice(0, 10),
+    'Last Modified Date': date,
     'Place of Performance Country Code': 'CAN',
     'Place of Performance Country Name': 'Canada',
     'Place of Performance City Name': item.vendor_province || item.vendor_city || '',

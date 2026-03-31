@@ -34,7 +34,8 @@ export default async function handler(req, res) {
 
     const data = await dataRes.json();
     const records = data.result?.records || [];
-    return res.status(200).json({ result: { records } });
+    const sampleKeys = records[0] ? Object.keys(records[0]) : [];
+    return res.status(200).json({ result: { records }, _debug: { sampleKeys, count: records.length } });
   } catch (e) {
     return res.status(502).json({ error: e.message, type: e.constructor?.name, pkgPreview: pkgText.slice(0, 200) });
   }
