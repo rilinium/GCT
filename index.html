@@ -4381,12 +4381,8 @@ function normalizeCAContract(item, idx) {
 }
 
 async function fetchCAContracts() {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - DAY_PRESETS[CFG.daysIdx]);
-  const fmt = d => d.toISOString().split('T')[0];
   const limit = Math.min(CFG.pages * 100, 1000);
-  const params = new URLSearchParams({ from: fmt(start), to: fmt(end), limit });
+  const params = new URLSearchParams({ limit });
   const res = await fetch(`/api/canada-contracts?${params}`);
   if (!res.ok) {
     let detail = '';
