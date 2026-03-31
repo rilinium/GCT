@@ -1500,16 +1500,48 @@
           <option value="fema">FEMA</option>
           <option value="uscg">U.S. Coast Guard</option>
         </optgroup>
+        <optgroup label="─── Intelligence ───">
+          <option value="cia">CIA</option>
+          <option value="nsa">NSA</option>
+          <option value="dia">Defense Intelligence Agency</option>
+          <option value="nro">National Reconnaissance Office</option>
+          <option value="nga">Nat'l Geospatial-Intelligence Agency</option>
+        </optgroup>
         <optgroup label="─── Civilian ───">
           <option value="doe">Dept. of Energy</option>
+          <option value="nnsa">NNSA (Nuclear Security)</option>
           <option value="nasa">NASA</option>
           <option value="hhs">Health and Human Services</option>
+          <option value="cdc">CDC</option>
+          <option value="nih">NIH</option>
+          <option value="fda">FDA</option>
           <option value="va">Dept. of Veterans Affairs</option>
           <option value="dot">Dept. of Transportation</option>
+          <option value="faa">FAA</option>
           <option value="gsa">General Services Administration</option>
           <option value="doj">Dept. of Justice</option>
+          <option value="fbi">FBI</option>
+          <option value="dea">DEA</option>
           <option value="treasury">Dept. of the Treasury</option>
+          <option value="irs">IRS</option>
           <option value="state">Dept. of State</option>
+          <option value="usaid">USAID</option>
+          <option value="interior">Dept. of the Interior</option>
+          <option value="usgs">USGS</option>
+          <option value="agriculture">Dept. of Agriculture</option>
+          <option value="commerce">Dept. of Commerce</option>
+          <option value="noaa">NOAA</option>
+          <option value="nist">NIST</option>
+          <option value="labor">Dept. of Labor</option>
+          <option value="education">Dept. of Education</option>
+          <option value="hud">Housing and Urban Development</option>
+          <option value="epa">Environmental Protection Agency</option>
+          <option value="ssa">Social Security Administration</option>
+          <option value="sba">Small Business Administration</option>
+          <option value="nrc">Nuclear Regulatory Commission</option>
+          <option value="sec">Securities and Exchange Commission</option>
+          <option value="ftc">Federal Trade Commission</option>
+          <option value="fed">Federal Reserve</option>
         </optgroup>
       </select>
     </div>
@@ -4149,15 +4181,45 @@ const AGENCY_PRESETS = {
   ice:      [{ type:'awarding', tier:'subtier',  name:'U.S. Immigration and Customs Enforcement' }],
   fema:     [{ type:'awarding', tier:'subtier',  name:'Federal Emergency Management Agency' }],
   uscg:     [{ type:'awarding', tier:'subtier',  name:'U.S. Coast Guard' }],
-  doe:      [{ type:'awarding', tier:'toptier',  name:'Department of Energy' }],
-  nasa:     [{ type:'awarding', tier:'toptier',  name:'National Aeronautics and Space Administration' }],
-  hhs:      [{ type:'awarding', tier:'toptier',  name:'Department of Health and Human Services' }],
-  va:       [{ type:'awarding', tier:'toptier',  name:'Department of Veterans Affairs' }],
-  dot:      [{ type:'awarding', tier:'toptier',  name:'Department of Transportation' }],
-  gsa:      [{ type:'awarding', tier:'toptier',  name:'General Services Administration' }],
-  doj:      [{ type:'awarding', tier:'toptier',  name:'Department of Justice' }],
-  treasury: [{ type:'awarding', tier:'toptier',  name:'Department of the Treasury' }],
-  state:    [{ type:'awarding', tier:'toptier',  name:'Department of State' }],
+  cia:       [{ type:'awarding', tier:'toptier',  name:'Central Intelligence Agency' }],
+  nsa:       [{ type:'awarding', tier:'subtier',  name:'National Security Agency' }],
+  dia:       [{ type:'awarding', tier:'subtier',  name:'Defense Intelligence Agency' }],
+  nro:       [{ type:'awarding', tier:'subtier',  name:'National Reconnaissance Office' }],
+  nga:       [{ type:'awarding', tier:'subtier',  name:'National Geospatial-Intelligence Agency' }],
+  doe:       [{ type:'awarding', tier:'toptier',  name:'Department of Energy' }],
+  nnsa:      [{ type:'awarding', tier:'subtier',  name:'National Nuclear Security Administration' }],
+  nasa:      [{ type:'awarding', tier:'toptier',  name:'National Aeronautics and Space Administration' }],
+  hhs:       [{ type:'awarding', tier:'toptier',  name:'Department of Health and Human Services' }],
+  cdc:       [{ type:'awarding', tier:'subtier',  name:'Centers for Disease Control and Prevention' }],
+  nih:       [{ type:'awarding', tier:'subtier',  name:'National Institutes of Health' }],
+  fda:       [{ type:'awarding', tier:'subtier',  name:'Food and Drug Administration' }],
+  va:        [{ type:'awarding', tier:'toptier',  name:'Department of Veterans Affairs' }],
+  dot:       [{ type:'awarding', tier:'toptier',  name:'Department of Transportation' }],
+  faa:       [{ type:'awarding', tier:'subtier',  name:'Federal Aviation Administration' }],
+  gsa:       [{ type:'awarding', tier:'toptier',  name:'General Services Administration' }],
+  doj:       [{ type:'awarding', tier:'toptier',  name:'Department of Justice' }],
+  fbi:       [{ type:'awarding', tier:'subtier',  name:'Federal Bureau of Investigation' }],
+  dea:       [{ type:'awarding', tier:'subtier',  name:'Drug Enforcement Administration' }],
+  treasury:  [{ type:'awarding', tier:'toptier',  name:'Department of the Treasury' }],
+  irs:       [{ type:'awarding', tier:'subtier',  name:'Internal Revenue Service' }],
+  state:     [{ type:'awarding', tier:'toptier',  name:'Department of State' }],
+  usaid:     [{ type:'awarding', tier:'toptier',  name:'Agency for International Development' }],
+  interior:  [{ type:'awarding', tier:'toptier',  name:'Department of the Interior' }],
+  usgs:      [{ type:'awarding', tier:'subtier',  name:'U.S. Geological Survey' }],
+  agriculture:[{ type:'awarding', tier:'toptier', name:'Department of Agriculture' }],
+  commerce:  [{ type:'awarding', tier:'toptier',  name:'Department of Commerce' }],
+  noaa:      [{ type:'awarding', tier:'subtier',  name:'National Oceanic and Atmospheric Administration' }],
+  nist:      [{ type:'awarding', tier:'subtier',  name:'National Institute of Standards and Technology' }],
+  labor:     [{ type:'awarding', tier:'toptier',  name:'Department of Labor' }],
+  education: [{ type:'awarding', tier:'toptier',  name:'Department of Education' }],
+  hud:       [{ type:'awarding', tier:'toptier',  name:'Department of Housing and Urban Development' }],
+  epa:       [{ type:'awarding', tier:'toptier',  name:'Environmental Protection Agency' }],
+  ssa:       [{ type:'awarding', tier:'toptier',  name:'Social Security Administration' }],
+  sba:       [{ type:'awarding', tier:'toptier',  name:'Small Business Administration' }],
+  nrc:       [{ type:'awarding', tier:'toptier',  name:'Nuclear Regulatory Commission' }],
+  sec:       [{ type:'awarding', tier:'toptier',  name:'Securities and Exchange Commission' }],
+  ftc:       [{ type:'awarding', tier:'toptier',  name:'Federal Trade Commission' }],
+  fed:       [{ type:'awarding', tier:'toptier',  name:'Federal Reserve System' }],
 };
 
 // ─── IndexedDB cache ──────────────────────────────────────────────────────────
