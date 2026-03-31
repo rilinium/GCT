@@ -4299,6 +4299,7 @@ async function fetchUKContracts() {
 
 // ─── Canada (Open Government proactive disclosure) ────────────────────────────
 const CA_PROVINCE_COORDS = {
+  // Full names
   'ontario': [51.2538, -85.3232],
   'quebec': [52.9399, -73.5491],
   'québec': [52.9399, -73.5491],
@@ -4315,35 +4316,60 @@ const CA_PROVINCE_COORDS = {
   'nunavut': [70.2998, -83.1076],
   'yukon': [64.2823, -135.0000],
   'national capital region': [45.4215, -75.6972],
+  // 2-letter codes
+  'on': [51.2538, -85.3232],
+  'qc': [52.9399, -73.5491],
+  'bc': [53.7267, -127.6476],
+  'ab': [53.9333, -116.5765],
+  'mb': [56.4150, -98.7390],
+  'sk': [52.9399, -106.4509],
+  'ns': [44.6820, -63.7443],
+  'nb': [46.5653, -66.4619],
+  'nl': [53.1355, -57.6604],
+  'pe': [46.5107, -63.4168],
+  'nt': [64.8255, -124.8457],
+  'nu': [70.2998, -83.1076],
+  'yt': [64.2823, -135.0000],
+  // Major cities
   'ottawa': [45.4215, -75.6972],
+  'toronto': [43.6532, -79.3832],
+  'vancouver': [49.2827, -123.1207],
+  'montreal': [45.5017, -73.5673],
+  'montréal': [45.5017, -73.5673],
+  'calgary': [51.0447, -114.0719],
+  'edmonton': [53.5461, -113.4938],
+  'winnipeg': [49.8951, -97.1384],
+  'halifax': [44.6488, -63.5752],
+  'gatineau': [45.4765, -75.7013],
 };
 
 function normalizeCAContract(item, idx) {
   const value = parseFloat(
-    item.contract_value ?? item.original_value ?? item.award_value ??
-    item.total_value ?? item.amendment_value ?? 0
+    item.contract_value ?? item.original_value ?? item.amendment_value ?? 0
   ) || 0;
-  const vendor = item.vendor_name || item.supplier_name || item.vendor || '—';
-  const desc = item.description_en || item.description || item.comments_en || '—';
-  const org = item.owner_org_title || item.department || item.organization || '—';
-  const date = (item.contract_date || item.award_date || item.start_date || '').slice(0, 10);
-  const province = (item.vendor_province || item.delivery_province || item.vendor_city || '').toLowerCase().trim();
-  const coordKey = Object.keys(CA_PROVINCE_COORDS).find(k => province === k || province.includes(k));
+  const vendor = item.vendor_name || '—';
+  const desc = item.description_en || item.description_fr || '—';
+  const org = item.owner_org_title || item.owner_org || '—';
+  const date = (item.contract_date || item.contract_period_start || '').slice(0, 10);
+  // vendor_city / vendor_province fields exist in this dataset
+  const rawLoc = (item.vendor_province || item.vendor_city || '').toLowerCase().trim();
+  const coordKey = Object.keys(CA_PROVINCE_COORDS).find(k => rawLoc === k || rawLoc.includes(k));
   const coords = coordKey ? CA_PROVINCE_COORDS[coordKey] : [56.1304, -106.3468];
-  const id = item.reference_number || item.contract_number || `ca_${idx}`;
+  const id = item.reference_number || item.procurement_id || `ca_${idx}`;
+  const locationLabel = [item.vendor_city, item.vendor_province].filter(Boolean).join(', ') || '';
   return {
     'Award ID': id,
     'Recipient Name': vendor,
     'Award Amount': value,
     'Description': desc,
     'Awarding Agency': org,
-    'Awarding Sub Agency': '',
+    'Awarding Sub Agency': item.buyer_name || '',
     'Last Modified Date': date,
     'Place of Performance Country Code': 'CAN',
     'Place of Performance Country Name': 'Canada',
-    'Place of Performance City Name': item.vendor_province || item.vendor_city || '',
-    'Place of Performance State Code': '',
-    'NAICS Code': '',
+    'Place of Performance City Name': locationLabel,
+    'Place of Performance State Code': item.vendor_province || '',
+    'NAICS Code': item.commodity_type || '',
     'NAICS Description': '',
     'generated_internal_id': id,
     '_source': 'ca',

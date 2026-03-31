@@ -1,5 +1,7 @@
 const BASE = 'https://open.canada.ca/data/en/api/3/action';
-const DATASET = 'd8f85d91-7dec-4fd1-8055-483b77225d8b';
+// Direct resource ID for "Contracts over $10,000" – individual contract records
+// (package d8f85d91-7dec-4fd1-8055-483b77225d8b, resource fac950c0-00d5-4ec1-a4d3-9cbebf98a305)
+const RESOURCE_ID = 'fac950c0-00d5-4ec1-a4d3-9cbebf98a305';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,35 +10,39 @@ export default async function handler(req, res) {
   const { from, to, limit = 500 } = req.query;
   const safeLimit = Math.min(parseInt(limit) || 500, 1000);
 
-  // Step 1: probe the API with a lightweight call
-  let pkgText = '';
+  // Build SQL with optional date range filter
+  let where = '';
+  if (from && to) {
+    where = `WHERE contract_date >= '${from}' AND contract_date <= '${to}'`;
+  } else if (from) {
+    where = `WHERE contract_date >= '${from}'`;
+  } else if (to) {
+    where = `WHERE contract_date <= '${to}'`;
+  }
+
+  const sql = `SELECT * FROM "${RESOURCE_ID}" ${where} ORDER BY contract_date DESC LIMIT ${safeLimit}`;
+
   try {
-    const probe = await fetch(`${BASE}/package_show?id=${DATASET}`, {
+    const url = `${BASE}/datastore_search_sql?sql=${encodeURIComponent(sql)}`;
+    const dataRes = await fetch(url, {
       headers: { 'User-Agent': 'curl/7.88.1', Accept: 'application/json' },
-      signal: AbortSignal.timeout(9000),
+      signal: AbortSignal.timeout(12000),
     });
-    pkgText = await probe.text();
-    if (!probe.ok) return res.status(probe.status).json({ error: `package_show HTTP ${probe.status}`, body: pkgText.slice(0, 300) });
 
-    const pkg = JSON.parse(pkgText);
-    const resources = (pkg.result?.resources || []).filter(r => r.datastore_active);
-    if (!resources.length) return res.status(404).json({ error: 'No active datastore resources', all: pkg.result?.resources?.map(r => ({ id: r.id, name: r.name, active: r.datastore_active })) });
-
-    resources.sort((a, b) => (b.last_modified || b.created || '').localeCompare(a.last_modified || a.created || ''));
-    const resourceId = resources[0].id;
-
-    const params = new URLSearchParams({ resource_id: resourceId, limit: safeLimit });
-    const dataRes = await fetch(`${BASE}/datastore_search?${params}`, {
-      headers: { 'User-Agent': 'curl/7.88.1', Accept: 'application/json' },
-      signal: AbortSignal.timeout(9000),
-    });
-    if (!dataRes.ok) return res.status(dataRes.status).json({ error: `datastore_search HTTP ${dataRes.status}` });
+    if (!dataRes.ok) {
+      const body = await dataRes.text();
+      return res.status(dataRes.status).json({ error: `datastore_search_sql HTTP ${dataRes.status}`, body: body.slice(0, 300) });
+    }
 
     const data = await dataRes.json();
+    if (!data.success) {
+      return res.status(502).json({ error: 'CKAN error', detail: data.error });
+    }
+
     const records = data.result?.records || [];
     const sampleKeys = records[0] ? Object.keys(records[0]) : [];
     return res.status(200).json({ result: { records }, _debug: { sampleKeys, count: records.length } });
   } catch (e) {
-    return res.status(502).json({ error: e.message, type: e.constructor?.name, pkgPreview: pkgText.slice(0, 200) });
+    return res.status(502).json({ error: e.message, type: e.constructor?.name });
   }
 }
