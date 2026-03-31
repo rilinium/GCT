@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     resources.sort((a, b) => (b.last_modified || b.created || '').localeCompare(a.last_modified || a.created || ''));
     const resourceId = resources[0].id;
 
-    const params = new URLSearchParams({ resource_id: resourceId, limit: safeLimit, sort: 'award_value desc' });
+    const params = new URLSearchParams({ resource_id: resourceId, limit: safeLimit });
     const dataRes = await fetch(`${BASE}/datastore_search?${params}`, {
       headers: { 'User-Agent': 'curl/7.88.1', Accept: 'application/json' },
       signal: AbortSignal.timeout(9000),
