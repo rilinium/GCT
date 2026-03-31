@@ -110,8 +110,13 @@
       white-space: nowrap; flex-shrink: 1; min-width: 0;
       overflow: hidden; text-overflow: ellipsis;
     }
-    #header-btns { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+    #header-btns { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; align-items: center; }
     .header-btn { font-size: 9px; padding: 5px 9px; letter-spacing: 1px; }
+    #data-source-picker { display: flex; gap: 2px; align-items: center; }
+    #data-source-picker::before { content: ''; display: block; width: 1px; height: 14px; background: rgba(255,255,255,.12); margin-right: 4px; }
+    .dsrc-btn { background: none; border: 1px solid rgba(255,255,255,.1); border-radius: 4px; padding: 3px 7px; font-size: 14px; line-height: 1; cursor: pointer; opacity: 0.45; transition: opacity .12s, background .12s, border-color .12s; }
+    .dsrc-btn:hover { opacity: 0.8; background: rgba(255,255,255,.07); }
+    .dsrc-btn.active { opacity: 1; background: rgba(var(--accent-rgb),.12); border-color: rgba(var(--accent-rgb),.45); }
     .title-short { display: none; }
     .title-long  { display: inline; }
     @media (max-width: 960px) {
@@ -1445,6 +1450,11 @@
       <button id="timeline-btn" class="header-btn" onclick="toggleTimeline()" title="Timeline scrubber (T)">TIMELINE</button>
       <button id="refresh-btn" class="header-btn" onclick="loadData()">REFRESH</button>
       <button class="header-btn" onclick="openSettings()">⚙ SETTINGS</button>
+      <div id="data-source-picker">
+        <button class="dsrc-btn active" data-src="us" onclick="switchDataSource('us')" title="United States">🇺🇸</button>
+        <button class="dsrc-btn" data-src="uk" onclick="switchDataSource('uk')" title="United Kingdom">🇬🇧</button>
+        <button class="dsrc-btn" data-src="ca" onclick="switchDataSource('ca')" title="Canada">🇨🇦</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1468,10 +1478,6 @@
         <button class="stab" id="stab-movers" onclick="switchTab('movers')">TOP $</button>
         <button class="stab" id="stab-watch" onclick="switchTab('watch')">WATCH</button>
       </div>
-    </div>
-    <div style="display:flex;gap:4px;margin-bottom:7px">
-      <button id="dsrc-us" class="stab active" onclick="switchDataSource('us')">🇺🇸 US</button>
-      <button id="dsrc-uk" class="stab" onclick="switchDataSource('uk')">🇬🇧 UK</button>
     </div>
     <div id="agency-filter-row">
       <select id="agency-filter-select">
@@ -3139,12 +3145,14 @@ function renderCompanySummaryHtml(stats, fromApi) {
         <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent)">${stats.dateRange.from} → ${stats.dateRange.to}</div>
        </div>`
     : '';
-  const isUK = dataSource === 'uk';
-  const srcAttr = isUK
+  const srcAttr = dataSource === 'uk'
     ? `<a href="https://www.contractsfinder.service.gov.uk" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Contracts Finder</a>`
+    : dataSource === 'ca'
+    ? `<a href="https://open.canada.ca" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Open Canada</a>`
     : `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
-  const sourceNote = (fromApi || isUK)
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttr}${isUK ? '' : ' · Since Oct 2007'}</div>`
+  const isExtSrc = dataSource === 'uk' || dataSource === 'ca';
+  const sourceNote = (fromApi || isExtSrc)
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttr}${isExtSrc ? '' : ' · Since Oct 2007'}</div>`
     : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttr}</div>
        <button class="cp-load-all-btn" onclick="loadAllCompanyContracts('${safeName}')">⬇ Load All from API</button>`;
   return `
@@ -3629,12 +3637,14 @@ function renderCountryBody(body, contracts, fromApi, code) {
     </div>`).join('');
 
   const safeCode = code ? `'${code}'` : 'null';
-  const isUKCt = dataSource === 'uk';
-  const srcAttrCt = isUKCt
+  const isExtSrcCt = dataSource === 'uk' || dataSource === 'ca';
+  const srcAttrCt = dataSource === 'uk'
     ? `<a href="https://www.contractsfinder.service.gov.uk" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Contracts Finder</a>`
+    : dataSource === 'ca'
+    ? `<a href="https://open.canada.ca" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Open Canada</a>`
     : `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
-  const sourceNote = (fromApi || isUKCt)
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttrCt}${isUKCt ? '' : ' · Since Oct 2007'}</div>`
+  const sourceNote = (fromApi || isExtSrcCt)
+    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttrCt}${isExtSrcCt ? '' : ' · Since Oct 2007'}</div>`
     : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttrCt}</div>
        <button class="cp-load-all-btn" id="ctp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
        <div id="ctp-api-progress" style="font-size:9px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:6px;letter-spacing:.5px"></div>`;
@@ -4287,15 +4297,78 @@ async function fetchUKContracts() {
   return notices.map((entry, i) => normalizeUKContract(entry, i));
 }
 
+// ─── Canada (Open Government proactive disclosure) ────────────────────────────
+const CA_PROVINCE_COORDS = {
+  'ontario': [51.2538, -85.3232],
+  'quebec': [52.9399, -73.5491],
+  'québec': [52.9399, -73.5491],
+  'british columbia': [53.7267, -127.6476],
+  'alberta': [53.9333, -116.5765],
+  'manitoba': [56.4150, -98.7390],
+  'saskatchewan': [52.9399, -106.4509],
+  'nova scotia': [44.6820, -63.7443],
+  'new brunswick': [46.5653, -66.4619],
+  'newfoundland and labrador': [53.1355, -57.6604],
+  'newfoundland': [53.1355, -57.6604],
+  'prince edward island': [46.5107, -63.4168],
+  'northwest territories': [64.8255, -124.8457],
+  'nunavut': [70.2998, -83.1076],
+  'yukon': [64.2823, -135.0000],
+  'national capital region': [45.4215, -75.6972],
+  'ottawa': [45.4215, -75.6972],
+};
+
+function normalizeCAContract(item, idx) {
+  const value = parseFloat(item.award_value) || 0;
+  const province = (item.vendor_province || item.vendor_city || '').toLowerCase().trim();
+  const coordKey = Object.keys(CA_PROVINCE_COORDS).find(k => province === k || province.includes(k));
+  const coords = coordKey ? CA_PROVINCE_COORDS[coordKey] : [56.1304, -106.3468];
+  const id = item.reference_number || `ca_${idx}`;
+  return {
+    'Award ID': id,
+    'Recipient Name': item.vendor_name || '—',
+    'Award Amount': value,
+    'Description': item.description_en || '—',
+    'Awarding Agency': item.owner_org_title || '—',
+    'Awarding Sub Agency': '',
+    'Last Modified Date': (item.contract_date || '').slice(0, 10),
+    'Place of Performance Country Code': 'CAN',
+    'Place of Performance Country Name': 'Canada',
+    'Place of Performance City Name': item.vendor_province || item.vendor_city || '',
+    'Place of Performance State Code': '',
+    'NAICS Code': '',
+    'NAICS Description': '',
+    'generated_internal_id': id,
+    '_source': 'ca',
+    '_lat': coords[0],
+    '_lng': coords[1],
+    _amt: value,
+    _id: id,
+  };
+}
+
+async function fetchCAContracts() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - DAY_PRESETS[CFG.daysIdx]);
+  const fmt = d => d.toISOString().split('T')[0];
+  const limit = Math.min(CFG.pages * 100, 1000);
+  const params = new URLSearchParams({ from: fmt(start), to: fmt(end), limit });
+  const res = await fetch(`/api/canada-contracts?${params}`);
+  if (!res.ok) throw new Error(`Open Canada HTTP ${res.status}`);
+  const json = await res.json();
+  const records = json.result?.records || [];
+  return records.map((r, i) => normalizeCAContract(r, i));
+}
+
 function switchDataSource(src) {
   if (src === dataSource) return;
   dataSource = src;
   allContracts = []; filtered = [];
-  fetching = false; // cancel any in-flight guard so new load proceeds
+  fetching = false;
   renderGlobe([]); renderSidebar([]);
   document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
-  document.getElementById('dsrc-us').classList.toggle('active', src === 'us');
-  document.getElementById('dsrc-uk').classList.toggle('active', src === 'uk');
+  document.querySelectorAll('.dsrc-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.src === src));
   loadData();
 }
 
@@ -4367,8 +4440,9 @@ async function loadData() {
   document.getElementById('refresh-btn').textContent = 'SCANNING…';
   setLoadProgress(70, 'Fetching contracts...');
 
-  const agencyKey = dataSource === 'uk'
-    ? 'uk_all'
+  const isExternal = dataSource === 'uk' || dataSource === 'ca';
+  const agencyKey = isExternal
+    ? `${dataSource}_all`
     : (document.getElementById('agency-filter-select')?.value || 'all');
   const searchExtra = parseSearch(query || '');
   const isSearch = dataSource === 'us' && !!(searchExtra.keywords || searchExtra.place_of_performance_scope || searchExtra.agencies);
@@ -4402,14 +4476,14 @@ async function loadData() {
   const newestCached = (!isSearch && cached.length)
     ? cached.map(c => c['Last Modified Date']).filter(Boolean).sort().pop()
     : null;
-  const isFullMiss = dataSource === 'uk' || !newestCached || newestCached < windowStartStr;
+  const isFullMiss = isExternal || !newestCached || newestCached < windowStartStr;
   const fetchOpts = (!isSearch && !isFullMiss)
     ? { startDate: newestCached, sort: 'Last Modified Date' }
     : {};
 
   // Fire animation in parallel with fetch
   const [raw] = await Promise.allSettled([
-    dataSource === 'uk' ? fetchUKContracts() : fetchContracts(fetchOpts),
+    dataSource === 'uk' ? fetchUKContracts() : dataSource === 'ca' ? fetchCAContracts() : fetchContracts(fetchOpts),
     playRefreshAnimation(),
   ]);
 
