@@ -4379,6 +4379,10 @@ function switchDataSource(src) {
   renderGlobe([]); renderSidebar([]);
   document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
   document.querySelectorAll('.dsrc-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.src === src));
+  const params = new URLSearchParams(location.search);
+  if (src === 'us') params.delete('src'); else params.set('src', src);
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
   loadData();
 }
 
@@ -5155,7 +5159,13 @@ function restoreFromUrl() {
   const q = params.get('q');
   const naics = params.get('naics');
   const hm = params.get('heatmap');
+  const src = params.get('src');
 
+  if (src && ['us', 'uk', 'ca'].includes(src)) {
+    dataSource = src;
+    document.querySelectorAll('.dsrc-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.src === src));
+    document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
+  }
   if (agency) {
     const sel = document.getElementById('agency-filter-select');
     if (sel) sel.value = agency;
