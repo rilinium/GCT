@@ -33,11 +33,7 @@ export default async function handler(req, res) {
     if (!dataRes.ok) return res.status(dataRes.status).json({ error: `datastore_search HTTP ${dataRes.status}` });
 
     const data = await dataRes.json();
-    let records = data.result?.records || [];
-    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-    if (dateRe.test(from)) records = records.filter(r => (r.contract_date || '') >= from);
-    if (dateRe.test(to))   records = records.filter(r => (r.contract_date || '') <= to);
-
+    const records = data.result?.records || [];
     return res.status(200).json({ result: { records } });
   } catch (e) {
     return res.status(502).json({ error: e.message, type: e.constructor?.name, pkgPreview: pkgText.slice(0, 200) });
