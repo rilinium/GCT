@@ -4353,11 +4353,25 @@ async function fetchCAContracts() {
   start.setDate(start.getDate() - DAY_PRESETS[CFG.daysIdx]);
   const fmt = d => d.toISOString().split('T')[0];
   const limit = Math.min(CFG.pages * 100, 1000);
-  const params = new URLSearchParams({ from: fmt(start), to: fmt(end), limit });
-  const res = await fetch(`/api/canada-contracts?${params}`);
-  if (!res.ok) throw new Error(`Open Canada HTTP ${res.status}`);
+  const BASE = 'https://open.canada.ca/data/en/api/3/action';
+  const DATASET = 'd8f85d91-7dec-4fd1-8055-483b77225d8b';
+
+  // Resolve resource ID from dataset metadata
+  const pkgRes = await fetch(`${BASE}/package_show?id=${DATASET}`);
+  if (!pkgRes.ok) throw new Error(`Open Canada package_show ${pkgRes.status}`);
+  const pkg = await pkgRes.json();
+  const resources = (pkg.result?.resources || []).filter(r => r.datastore_active);
+  if (!resources.length) throw new Error('No active Open Canada datastore resources');
+  resources.sort((a, b) => (b.last_modified || b.created || '').localeCompare(a.last_modified || a.created || ''));
+  const resourceId = resources[0].id;
+
+  const params = new URLSearchParams({ resource_id: resourceId, limit, sort: 'award_value desc' });
+  const res = await fetch(`${BASE}/datastore_search?${params}`);
+  if (!res.ok) throw new Error(`Open Canada datastore_search ${res.status}`);
   const json = await res.json();
-  const records = json.result?.records || [];
+  let records = json.result?.records || [];
+  const from = fmt(start), to = fmt(end);
+  records = records.filter(r => (!r.contract_date || (r.contract_date >= from && r.contract_date <= to)));
   return records.map((r, i) => normalizeCAContract(r, i));
 }
 
