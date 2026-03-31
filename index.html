@@ -4234,29 +4234,32 @@ async function clearAllCache() {
 
 function normalizeUKContract(item, idx) {
   const d = item.item || item;
-  const value = parseFloat(d.value != null ? d.value : (d.awardedValue != null ? d.awardedValue : (d.contractValue != null ? d.contractValue : 0))) || 0;
-  const supplier = d.suppliers?.[0]?.name || d.supplierName || '—';
-  const org = d.organisations?.[0]?.name || d.buyerName || d.organisationName || '—';
-  const loc = (d.location || '').toLowerCase().trim();
-  const coordKey = Object.keys(UK_REGION_COORDS).find(k => loc === k || loc.includes(k));
+  const value = parseFloat(d.awardedValue != null ? d.awardedValue : (d.valueLow != null ? d.valueLow : 0)) || 0;
+  // awardedSupplier is a comma-separated string of supplier names
+  const supplier = (d.awardedSupplier || '').split(',')[0].trim() || d.supplierName || '—';
+  const org = d.organisationName || d.buyerName || '—';
+  // region is comma-separated; use first region for coord lookup
+  const firstRegion = (d.region || d.regionText || d.location || '').split(',')[0].toLowerCase().trim();
+  const coordKey = Object.keys(UK_REGION_COORDS).find(k => firstRegion === k || firstRegion.includes(k));
   const coords = coordKey ? UK_REGION_COORDS[coordKey] : null;
-  const published = (d.publishedDate || d.awardedDate || d.noticeDate || '').slice(0, 10);
+  const published = (d.publishedDate || d.awardedDate || '').slice(0, 10);
   const id = d.noticeIdentifier || d.id || `uk_${idx}`;
-  const cpv = d.cpvCodes?.[0] || {};
+  const cpvCode = typeof d.cpvCodes === 'string' ? d.cpvCodes.split(',')[0] : (d.cpvCodes?.[0]?.code || '');
+  const cpvDesc = typeof d.cpvDescription === 'string' ? d.cpvDescription : (d.cpvCodes?.[0]?.text || '');
   return {
     'Award ID': id,
     'Recipient Name': supplier,
     'Award Amount': value,
-    'Description': d.title || d.noticeSummary || '—',
+    'Description': d.title || d.description || '—',
     'Awarding Agency': org,
     'Awarding Sub Agency': '',
     'Last Modified Date': published,
     'Place of Performance Country Code': 'GBR',
     'Place of Performance Country Name': 'United Kingdom',
-    'Place of Performance City Name': d.location || '',
+    'Place of Performance City Name': d.region || d.location || '',
     'Place of Performance State Code': '',
-    'NAICS Code': cpv.code || '',
-    'NAICS Description': cpv.text || cpv.description || '',
+    'NAICS Code': cpvCode,
+    'NAICS Description': cpvDesc,
     'generated_internal_id': id,
     '_source': 'uk',
     '_lat': coords?.[0] ?? null,
