@@ -4269,20 +4269,13 @@ async function fetchUKContracts() {
   const start = new Date();
   start.setDate(start.getDate() - DAY_PRESETS[CFG.daysIdx]);
   const fmt = d => d.toISOString().split('T')[0];
-  const all = [];
-  for (let page = 0; page < CFG.pages; page++) {
-    const params = new URLSearchParams({
-      noticeType: 'AWARD', publishedFrom: fmt(start), publishedTo: fmt(end),
-      page, size: 100, order: 'NewestFirst',
-    });
-    const res = await fetch(`https://www.contractsfinder.service.gov.uk/api/rest/2/search_notices/json?${params}`);
-    if (!res.ok) throw new Error(`Contracts Finder HTTP ${res.status}`);
-    const json = await res.json();
-    const results = json.results || [];
-    results.forEach((item, i) => all.push(normalizeUKContract(item, all.length + i)));
-    if (results.length < 100) break;
-  }
-  return all;
+  const size = CFG.pages * 100;
+  const params = new URLSearchParams({ publishedFrom: fmt(start), publishedTo: fmt(end), size });
+  const res = await fetch(`/api/uk-contracts?${params}`);
+  if (!res.ok) throw new Error(`Contracts Finder HTTP ${res.status}`);
+  const json = await res.json();
+  const notices = json.noticeList || json.results || [];
+  return notices.map((entry, i) => normalizeUKContract(entry, i));
 }
 
 function switchDataSource(src) {
