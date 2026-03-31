@@ -4291,6 +4291,7 @@ function switchDataSource(src) {
   if (src === dataSource) return;
   dataSource = src;
   allContracts = []; filtered = [];
+  fetching = false; // cancel any in-flight guard so new load proceeds
   renderGlobe([]); renderSidebar([]);
   document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
   document.getElementById('dsrc-us').classList.toggle('active', src === 'us');
@@ -4361,6 +4362,7 @@ function playRefreshAnimation() {
 async function loadData() {
   if (fetching) return;
   fetching = true;
+  const loadedForSource = dataSource; // capture so we can discard stale results
   document.getElementById('error-banner').style.display = 'none';
   document.getElementById('refresh-btn').textContent = 'SCANNING…';
   setLoadProgress(70, 'Fetching contracts...');
@@ -4410,6 +4412,9 @@ async function loadData() {
     dataSource === 'uk' ? fetchUKContracts() : fetchContracts(fetchOpts),
     playRefreshAnimation(),
   ]);
+
+  // Discard results if the user switched data source while this fetch was in flight
+  if (dataSource !== loadedForSource) { fetching = false; return; }
 
   if (raw.status === 'fulfilled') {
     setLoadProgress(88, 'Processing data...');
