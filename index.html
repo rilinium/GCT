@@ -5148,6 +5148,7 @@ function syncUrlState() {
   const naics = document.getElementById('naics-filter-select')?.value || 'all';
   if (naics !== 'all') params.set('naics', naics);
   if (heatmapMode) params.set('heatmap', '1');
+  if (dataSource !== 'us') params.set('src', dataSource);
   const str = params.toString();
   const newUrl = str ? location.pathname + '?' + str : location.pathname;
   history.replaceState(null, '', newUrl);
