@@ -32,6 +32,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
   <style>
+    *, *::before, *::after { border-radius: 0 !important; }
+    .live-dot, .leg-dot, input[type=range]::-webkit-slider-thumb,
+    .spinner::before, .spinner::after { border-radius: 50% !important; }
+
     :root {
       --accent: #00ff88;
       --accent-rgb: 0, 255, 136;
