@@ -99,7 +99,12 @@ export default async function handler(req, res) {
   // GET — anyone can read overrides
   if (req.method === 'GET') {
     try {
-      return res.status(200).json(await readGist());
+      const overrides = await readGist();
+      // Every page load and every tab refocus hits this, and each miss proxies to
+      // the GitHub Gist API (60 req/hr unauthenticated). Cache at the edge so
+      // traffic doesn't exhaust the rate limit; a 60s lag on an override is fine.
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=600');
+      return res.status(200).json(overrides);
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }

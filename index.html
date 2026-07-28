@@ -2116,13 +2116,33 @@ const AGENCY_RULES = [
   ['state',38.8944,-77.0486,'Dept. of State'],
 ];
 
+// Memoized: this scans ~120 substring rules and runs twice per contract on every
+// globe render, so without a cache it dominates render time on large datasets.
+// Distinct agency names number in the dozens, so the cache stays small.
+const _agencyInfoCache = new Map();
 function getAgencyInfo(name) {
   if (!name) return { lat: 38.8977, lng: -77.0366, label: 'Federal Government' };
+  const hit = _agencyInfoCache.get(name);
+  if (hit) return hit;
   const lower = ' ' + name.toLowerCase() + ' ';
+  let result = { lat: 38.8977, lng: -77.0366, label: name };
   for (const [kw, lat, lng, label] of AGENCY_RULES) {
-    if (lower.includes(kw)) return { lat, lng, label };
+    if (lower.includes(kw)) { result = { lat, lng, label }; break; }
   }
-  return { lat: 38.8977, lng: -77.0366, label: name };
+  _agencyInfoCache.set(name, result);
+  return result;
+}
+
+// ─── HTML escaping ───────────────────────────────────────────────────────────
+// All contract text (recipient names, agency names, descriptions) is vendor-
+// supplied via the upstream APIs, so it must never reach innerHTML unescaped.
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
@@ -2151,6 +2171,14 @@ function ptSize(n) {
   if (n >= 1e7) return 8;  if (n >= 1e6) return 6; return 4;
 }
 function fmtDate(s) { return s ? s.slice(0, 10) : '—'; }
+
+// IndexedDB uses _id as the primary key, so the fallback must be stable across
+// refreshes and unique per record. An array index is neither: record 0 of one
+// fetch silently overwrites record 0 of the last.
+function stableContractId(r) {
+  return r.generated_internal_id || r._id ||
+    `${r['Award ID'] || ''}|${r['Recipient Name'] || ''}|${r['Last Modified Date'] || ''}`;
+}
 const UK_REGION_COORDS = {
   'london': [51.5074, -0.1278],
   'south east': [51.2787, -0.5217],
@@ -2401,9 +2429,10 @@ function applyExperimental(on) {
     if (ticksPages)  ticksPages.innerHTML = '<span>100</span><span>500</span><span>1,000</span><span>1,500</span><span>2,000</span>';
     if (ticksDays)   ticksDays.innerHTML  = '<span>30d</span><span>60d</span><span>90d</span><span>180d</span><span>1yr</span>';
     if (warning)     warning.style.display = 'none';
-    updateDisplayValues();
-    saveSettings();
+    // Leaving experimental mode can clamp pages/daysIdx above, so persist them
   }
+  updateDisplayValues();
+  saveSettings();
 }
 
 function updateSlider(key, rawVal) {
@@ -2536,13 +2565,27 @@ function toggleSpin() {
   btn.textContent = spinLocked ? '▶ SPIN' : '⏸ SPIN';
   btn.classList.toggle('paused', spinLocked);
 }
-// Map from contract _id → point primitive index (for click identification)
-const idToData = new Map();
+// Map from contract _id → contract record, rebuilt in applyFilter.
+// Avoids a linear allContracts.find() on every card click / globe pick.
+const contractById = new Map();
+// Map from contract _id → the spread-adjusted [lat, lng] actually drawn on the
+// globe, so the highlight ring lands on the dot rather than the raw coordinate.
+const jitteredCoords = new Map();
 // Resume auto-rotation 3s after last interaction (set in initCesium once viewer exists)
 let scheduleRotateResume = () => {};
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 const ttEl = document.getElementById('tooltip');
+let ttVisible = false;
+let ttMouseX = 0, ttMouseY = 0;
+
+function positionTooltip() {
+  let x = ttMouseX + 18, y = ttMouseY - 16;
+  if (x + 280 > window.innerWidth - 320) x = ttMouseX - 292;
+  if (y + 220 > window.innerHeight - 30) y = window.innerHeight - 250;
+  ttEl.style.left = x + 'px'; ttEl.style.top = y + 'px';
+}
+
 function showTooltip(d) {
   document.getElementById('tt-name').textContent = d.recipient;
   document.getElementById('tt-amount').textContent = fmt$(d.amount);
@@ -2551,14 +2594,16 @@ function showTooltip(d) {
   document.getElementById('tt-location').textContent = d.loc;
   document.getElementById('tt-date').textContent = d.date;
   document.getElementById('tt-desc').textContent = d.desc;
+  positionTooltip(); // place it before revealing, so it never flashes at a stale spot
   ttEl.style.display = 'block';
+  ttVisible = true;
 }
-function hideTooltip() { ttEl.style.display = 'none'; }
+function hideTooltip() { ttEl.style.display = 'none'; ttVisible = false; }
+
+// Track the cursor unconditionally (cheap), but only touch layout while visible.
 document.addEventListener('mousemove', e => {
-  let x = e.clientX + 18, y = e.clientY - 16;
-  if (x + 280 > window.innerWidth - 320) x = e.clientX - 292;
-  if (y + 220 > window.innerHeight - 30) y = window.innerHeight - 250;
-  ttEl.style.left = x + 'px'; ttEl.style.top = y + 'px';
+  ttMouseX = e.clientX; ttMouseY = e.clientY;
+  if (ttVisible) positionTooltip();
 });
 
 // ─── Loading progress ────────────────────────────────────────────────────────
@@ -2801,7 +2846,9 @@ function renderGlobe(contracts) {
   const agencyHubs = [...agencyMap.values()];
 
   // Contract dots
+  jitteredCoords.clear();
   pts.forEach(({ lat, lng, c }) => {
+    jitteredCoords.set(c._id, [lat, lng]);
     const amt = c._amt;
     const loc = [c['Place of Performance City Name'], c['Place of Performance State Code'] || c['Place of Performance Country Code']].filter(Boolean).join(', ') || '—';
     const cdata = {
@@ -2911,12 +2958,12 @@ function renderSidebar(contracts) {
     div.dataset.id = c._id;
     div.dataset.name = name;
     div.innerHTML = `
-      <div class="c-recipient" title="${name}">${name}</div>
+      <div class="c-recipient" title="${esc(name)}">${esc(name)}</div>
       <div class="c-row">
         <span class="c-amount t-${tier(amt)}">${fmt$(amt)}</span>
-        <span class="c-location">${loc}</span>
+        <span class="c-location">${esc(loc)}</span>
       </div>
-      <div class="c-agency" title="${c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+      <div class="c-agency" title="${esc(c['Awarding Agency'] || '')}">${esc(c['Awarding Sub Agency'] || c['Awarding Agency'] || '—')}</div>
       <div class="c-date">${fmtDate(c['Last Modified Date'])}</div>
     `;
     frag.appendChild(div);
@@ -3162,11 +3209,12 @@ async function fetchCompanyContracts(name, onProgress) {
   for (let batch = 0; batch < MAX_PAGES / BATCH; batch++) {
     const pages = Array.from({ length: BATCH }, (_, i) => batch * BATCH + i + 1);
     const results = await Promise.all(pages.map(fetchPage));
-    results.flat().forEach((r, i) => {
-      r._id  = r.generated_internal_id || `api-${i}`;
+    const flat = results.flat();
+    flat.forEach(r => {
+      r._id  = stableContractId(r);
       r._amt = parseFloat(r['Award Amount']) || 0;
     });
-    all.push(...results.flat());
+    all.push(...flat);
     if (onProgress) onProgress(all.length);
     if (results.some(r => r.length < 100)) break;
   }
@@ -3174,7 +3222,6 @@ async function fetchCompanyContracts(name, onProgress) {
 }
 
 function renderCompanySummaryHtml(stats, fromApi) {
-  const safeName = stats.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const dateBox = stats.dateRange
     ? `<div class="cp-stat-box" style="grid-column:1/-1">
         <div class="cp-stat-label">Date Range</div>
@@ -3190,7 +3237,7 @@ function renderCompanySummaryHtml(stats, fromApi) {
   const sourceNote = (fromApi || isExtSrc)
     ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttr}${isExtSrc ? '' : ' · Since Oct 2007'}</div>`
     : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttr}</div>
-       <button class="cp-load-all-btn" onclick="loadAllCompanyContracts('${safeName}')">⬇ Load All from API</button>`;
+       <button class="cp-load-all-btn" data-act="load-all-company" data-name="${esc(stats.name)}">⬇ Load All from API</button>`;
   return `
     <div class="cp-section-title">Summary</div>
     <div class="cp-stats-grid">
@@ -3221,11 +3268,11 @@ function renderCompanyInfoHtml(profile) {
     .filter(t => t !== 'US-Owned' && t !== 'For-Profit') // too generic, skip
     .join(' · ') || null;
   const rows = [
-    profile.uei        ? `<div class="cp-info-row"><span class="cp-info-label">UEI</span><span class="cp-info-val">${profile.uei}</span></div>` : '',
+    profile.uei        ? `<div class="cp-info-row"><span class="cp-info-label">UEI</span><span class="cp-info-val">${esc(profile.uei)}</span></div>` : '',
     profile.parent_name && profile.parent_name !== profile.name
-      ? `<div class="cp-info-row"><span class="cp-info-label">Parent</span><span class="cp-info-val">${profile.parent_name}</span></div>` : '',
-    hq   ? `<div class="cp-info-row"><span class="cp-info-label">HQ</span><span class="cp-info-val">${hq}</span></div>` : '',
-    bizTypes ? `<div class="cp-info-row"><span class="cp-info-label">Type</span><span class="cp-info-val">${bizTypes}</span></div>` : '',
+      ? `<div class="cp-info-row"><span class="cp-info-label">Parent</span><span class="cp-info-val">${esc(profile.parent_name)}</span></div>` : '',
+    hq   ? `<div class="cp-info-row"><span class="cp-info-label">HQ</span><span class="cp-info-val">${esc(hq)}</span></div>` : '',
+    bizTypes ? `<div class="cp-info-row"><span class="cp-info-label">Type</span><span class="cp-info-val">${esc(bizTypes)}</span></div>` : '',
   ].join('');
   return rows ? `<div class="cp-section" id="cp-info-section"><div class="cp-section-title">Company Info</div>${rows}</div>` : '';
 }
@@ -3237,7 +3284,7 @@ function renderCompanyNaicsHtml(stats) {
     const pct = Math.round((amt / max) * 100);
     return `<div class="cp-agency-row">
       <div class="cp-agency-label">
-        <span class="cp-agency-name" title="${label}">${label}</span>
+        <span class="cp-agency-name" title="${esc(label)}">${esc(label)}</span>
         <span class="cp-agency-amt">${fmt$(amt)}</span>
       </div>
       <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
@@ -3253,7 +3300,7 @@ function renderCompanyAgenciesHtml(stats) {
     const pct = Math.round((amt / maxAmt) * 100);
     return `<div class="cp-agency-row">
       <div class="cp-agency-label">
-        <span class="cp-agency-name" title="${ag}">${ag}</span>
+        <span class="cp-agency-name" title="${esc(ag)}">${esc(ag)}</span>
         <span class="cp-agency-amt">${fmt$(amt)}</span>
       </div>
       <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
@@ -3264,7 +3311,6 @@ function renderCompanyAgenciesHtml(stats) {
 
 function renderCompanyContractsHtml(stats) {
   if (!stats.contracts.length) return `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace">No contracts found.</div>`;
-  const safeId = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const rows = stats.contracts.slice(0, 100).map(c => {
     const ceiling = parseFloat(c['Base and All Options Value']) || 0;
     const ceilLine = ceiling > c._amt * 1.05
@@ -3272,18 +3318,18 @@ function renderCompanyContractsHtml(stats) {
     const perfStart = c['Period of Performance Start Date'];
     const perfEnd   = c['Period of Performance Current End Date'];
     const perfLine  = perfStart
-      ? `<div class="cp-c-meta">${perfStart.slice(0,10)} → ${(perfEnd || '').slice(0,10) || '?'}</div>` : '';
+      ? `<div class="cp-c-meta">${esc(perfStart.slice(0,10))} → ${esc((perfEnd || '').slice(0,10)) || '?'}</div>` : '';
     const naicsLine = c['NAICS Description']
-      ? `<div class="cp-c-meta" style="opacity:.55">${c['NAICS Description']}</div>` : '';
+      ? `<div class="cp-c-meta" style="opacity:.55">${esc(c['NAICS Description'])}</div>` : '';
     const pscLine = c['Product or Service Code Description']
-      ? `<div class="cp-c-meta" style="opacity:.55">${c['Product or Service Code']} · ${c['Product or Service Code Description']}</div>` : '';
+      ? `<div class="cp-c-meta" style="opacity:.55">${esc(c['Product or Service Code'])} · ${esc(c['Product or Service Code Description'])}</div>` : '';
     return `
-    <div class="cp-contract-row" onclick="focusContract('${safeId(c._id)}');closeCompanyProfile()">
+    <div class="cp-contract-row" data-act="focus-contract" data-id="${esc(c._id)}">
       <div class="cp-c-top">
         <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
         <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
       </div>
-      <div class="cp-c-agency" title="${c['Awarding Sub Agency'] || c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+      <div class="cp-c-agency" title="${esc(c['Awarding Sub Agency'] || c['Awarding Agency'] || '')}">${esc(c['Awarding Sub Agency'] || c['Awarding Agency'] || '—')}</div>
       ${ceilLine}${perfLine}${naicsLine}${pscLine}
     </div>`;
   }).join('');
@@ -3339,48 +3385,20 @@ async function openCompanyProfile(name) {
   nameEl.textContent = name;
   body.innerHTML = `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">Loading…</div>`;
   panel.classList.add('open');
-  // Inject company name into range buttons
-  panel.querySelectorAll('.cp-range-btn').forEach(btn => {
-    btn.setAttribute('onclick', btn.getAttribute('onclick').replace(/__NAME__/g, name.replace(/'/g, "\\'")));
-  });
 
   // Check company contract cache
   const cachedEntry = await cacheGetEntity('company_cache', name);
   const fromApi = !!cachedEntry;
   const stats   = buildCompanyStats(name, cachedEntry ? cachedEntry.contracts : null);
-  const maxAmt  = stats.agencies.length ? stats.agencies[0][1] : 1;
   // Use admin override ticker if set, otherwise cached lookup
   const cached  = companyOverrides[name]?.ticker || companyTickerCache[name] || '';
-
-  const agencyRows = stats.agencies.slice(0, 8).map(([ag, amt]) => {
-    const pct = Math.round((amt / maxAmt) * 100);
-    return `<div class="cp-agency-row">
-      <div class="cp-agency-label">
-        <span class="cp-agency-name" title="${ag}">${ag}</span>
-        <span class="cp-agency-amt">${fmt$(amt)}</span>
-      </div>
-      <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('');
-
-  const safeId  = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const contractRows = stats.contracts.slice(0, 50).map(c => `
-    <div class="cp-contract-row" onclick="focusContract('${safeId(c._id)}');closeCompanyProfile()">
-      <div class="cp-c-top">
-        <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
-        <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
-      </div>
-      <div class="cp-c-agency" title="${c['Awarding Sub Agency'] || c['Awarding Agency'] || ''}">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
-    </div>`).join('');
-
-  const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
   body.innerHTML = `
     <div class="cp-section">
       <div class="cp-section-title">Stock</div>
       <div id="cp-stock-row">
-        <input id="cp-ticker-input" type="text" placeholder="TICKER" maxlength="8" value="${cached}" oninput="this.value=this.value.toUpperCase()">
-        <button id="cp-ticker-btn" onclick="refreshStockPrice('${safeName}')">↻ Load</button>
+        <input id="cp-ticker-input" type="text" placeholder="TICKER" maxlength="8" value="${esc(cached)}" oninput="this.value=this.value.toUpperCase()">
+        <button id="cp-ticker-btn" data-act="refresh-stock" data-name="${esc(name)}">↻ Load</button>
         <span style="font-size:7px;color:rgba(255,255,255,.25);font-family:'Share Tech Mono',monospace;line-height:1.3;max-width:70px">auto-detected, verify ticker</span>
       </div>
       <div id="cp-stock-hint" class="cp-stock-hint"></div>
@@ -3390,11 +3408,11 @@ async function openCompanyProfile(name) {
       <div id="cp-chart-wrap" style="display:none">
         <svg id="cp-chart-svg" viewBox="0 0 280 90" height="90" preserveAspectRatio="none"></svg>
         <div class="cp-range-btns">
-          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','5d','1d')">1W</button>
-          <button class="cp-range-btn active" onclick="switchChartRange('__NAME__','1mo','1d')">1M</button>
-          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','3mo','1d')">3M</button>
-          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','6mo','1wk')">6M</button>
-          <button class="cp-range-btn" onclick="switchChartRange('__NAME__','1y','1wk')">1Y</button>
+          <button class="cp-range-btn" data-act="chart-range" data-range="5d" data-interval="1d">1W</button>
+          <button class="cp-range-btn active" data-act="chart-range" data-range="1mo" data-interval="1d">1M</button>
+          <button class="cp-range-btn" data-act="chart-range" data-range="3mo" data-interval="1d">3M</button>
+          <button class="cp-range-btn" data-act="chart-range" data-range="6mo" data-interval="1wk">6M</button>
+          <button class="cp-range-btn" data-act="chart-range" data-range="1y" data-interval="1wk">1Y</button>
         </div>
       </div>
       <div id="cp-yf-attribution">
@@ -3563,12 +3581,9 @@ async function fetchAndRenderChart(ticker, range, interval, isUp) {
   } catch { /* silently skip */ }
 }
 
-async function switchChartRange(companyName, range, interval) {
+async function switchChartRange(btn, range, interval) {
   // Update active button
-  document.querySelectorAll('.cp-range-btn').forEach(b => {
-    const r = b.getAttribute('onclick').match(/'([^']+)','([^']+)'\)/);
-    b.classList.toggle('active', r && r[1] === range);
-  });
+  document.querySelectorAll('.cp-range-btn').forEach(b => b.classList.toggle('active', b === btn));
   const ticker = document.getElementById('cp-ticker-input')?.value;
   if (!ticker) return;
   const changeEl = document.getElementById('cp-price-change');
@@ -3610,7 +3625,7 @@ async function fetchCountryContracts(code, onProgress) {
     const results = await Promise.all(pages.map(fetchPage));
     results.flat().forEach(r => {
       r._amt = parseFloat(r['Award Amount']) || 0;
-      r._id  = r['generated_internal_id'] || r['Award ID'];
+      r._id  = stableContractId(r);
       all.push(r);
     });
     if (onProgress) onProgress(all.length);
@@ -3621,10 +3636,9 @@ async function fetchCountryContracts(code, onProgress) {
 
 function renderCountryBody(body, contracts, fromApi, code) {
   if (!contracts.length) {
-    const safeCode = code ? `'${code}'` : 'null';
     body.innerHTML = `<div style="padding:28px 20px;text-align:center;font-family:'Share Tech Mono',monospace;color:rgba(255,255,255,.35);font-size:10px;letter-spacing:1px">
       NO CONTRACTS IN CURRENT DATASET<br><br>
-      <button class="cp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
+      <button class="cp-load-all-btn" data-act="load-all-country" data-code="${esc(code || '')}">⬇ Load All from API</button>
     </div>`;
     return;
   }
@@ -3646,7 +3660,7 @@ function renderCountryBody(body, contracts, fromApi, code) {
     const pct = Math.round((amt / maxAmt) * 100);
     return `<div class="cp-agency-row">
       <div class="cp-agency-label">
-        <span class="cp-agency-name" title="${ag}">${ag}</span>
+        <span class="cp-agency-name" title="${esc(ag)}">${esc(ag)}</span>
         <span class="cp-agency-amt">${fmt$(amt)}</span>
       </div>
       <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
@@ -3654,25 +3668,23 @@ function renderCountryBody(body, contracts, fromApi, code) {
   }).join('');
 
   const recipRows = recipients.map(([r, amt]) => `
-    <div class="ctp-recipient-row" onclick="closeCountryProfile();openCompanyProfile(${JSON.stringify(r)})">
+    <div class="ctp-recipient-row" data-act="country-open-company" data-name="${esc(r)}">
       <div class="cp-agency-label">
-        <span class="ctp-recipient-name" title="${r}">${r}</span>
+        <span class="ctp-recipient-name" title="${esc(r)}">${esc(r)}</span>
         <span class="cp-agency-amt">${fmt$(amt)}</span>
       </div>
     </div>`).join('');
 
-  const safeId = id => id.toString().replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const contractRows = contracts.slice(0, 50).map(c => `
-    <div class="cp-contract-row" onclick="closeCountryProfile()">
+    <div class="cp-contract-row" data-act="close-country">
       <div class="cp-c-top">
         <span class="c-amount t-${tier(c._amt)}" style="font-size:11px">${fmt$(c._amt)}</span>
         <span class="cp-c-date">${fmtDate(c['Last Modified Date'])}</span>
       </div>
-      <div class="cp-c-agency">${c['Recipient Name'] || '—'}</div>
-      <div class="cp-c-agency" style="opacity:.6">${c['Awarding Sub Agency'] || c['Awarding Agency'] || '—'}</div>
+      <div class="cp-c-agency">${esc(c['Recipient Name'] || '—')}</div>
+      <div class="cp-c-agency" style="opacity:.6">${esc(c['Awarding Sub Agency'] || c['Awarding Agency'] || '—')}</div>
     </div>`).join('');
 
-  const safeCode = code ? `'${code}'` : 'null';
   const isExtSrcCt = dataSource === 'uk' || dataSource === 'ca';
   const srcAttrCt = dataSource === 'uk'
     ? `<a href="https://www.contractsfinder.service.gov.uk" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Contracts Finder</a>`
@@ -3682,7 +3694,7 @@ function renderCountryBody(body, contracts, fromApi, code) {
   const sourceNote = (fromApi || isExtSrcCt)
     ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttrCt}${isExtSrcCt ? '' : ' · Since Oct 2007'}</div>`
     : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttrCt}</div>
-       <button class="cp-load-all-btn" id="ctp-load-all-btn" onclick="loadAllCountryContracts(${safeCode})">⬇ Load All from API</button>
+       <button class="cp-load-all-btn" id="ctp-load-all-btn" data-act="load-all-country" data-code="${esc(code || '')}">⬇ Load All from API</button>
        <div id="ctp-api-progress" style="font-size:9px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:6px;letter-spacing:.5px"></div>`;
 
   body.innerHTML = `
@@ -3711,7 +3723,7 @@ async function loadAllCountryContracts(code) {
     if (prog) prog.remove();
     await cachePutEntity('country_cache', code, contracts);
     const body = document.getElementById('country-body');
-    if (body) renderCountryBody(body, contracts, true);
+    if (body) renderCountryBody(body, contracts, true, code);
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = '⬇ Load All from API'; }
     if (prog) prog.textContent = 'Failed: ' + e.message;
@@ -3777,6 +3789,18 @@ function updateStats(contracts) {
   if (el) el.textContent = fmt(start) + ' – ' + fmt(end) + ' (' + duration + ')';
 }
 
+// Move the .active highlight without rebuilding the list, which can hold
+// thousands of cards. Returns the newly-active card, if any.
+function setActiveCard(id) {
+  const list = document.getElementById('contracts-list');
+  const prev = list.querySelector('.contract-card.active');
+  if (prev) prev.classList.remove('active');
+  if (id == null) return null;
+  const next = list.querySelector(`.contract-card[data-id="${CSS.escape(String(id))}"]`);
+  if (next) next.classList.add('active');
+  return next;
+}
+
 function clearSelection() {
   activeId = null;
   if (highlightRafId) { cancelAnimationFrame(highlightRafId); highlightRafId = null; }
@@ -3786,7 +3810,7 @@ function clearSelection() {
     if (highlightPtCollection) highlightPtCollection.removeAll();
     viewer.scene.requestRender();
   }
-  renderSidebar(filtered);
+  setActiveCard(null);
 }
 
 function driveHighlightAnimation() {
@@ -3853,10 +3877,10 @@ function highlightActivePoint(c, lat, lng) {
 
 function focusContract(id) {
   activeId = id;
-  renderSidebar(filtered);
-  const c = allContracts.find(x => x._id === id);
+  const card = setActiveCard(id);
+  const c = contractById.get(id);
   if (c && viewer) {
-    const [lat, lng] = getCoords(c);
+    const [lat, lng] = jitteredCoords.get(id) || getCoords(c);
     highlightActivePoint(c, lat, lng);
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(lng, lat, 350000),
@@ -3865,7 +3889,6 @@ function focusContract(id) {
     });
     autoRotate = false; scheduleRotateResume();
   }
-  const card = document.querySelector(`.contract-card[data-id="${id}"]`);
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -3882,7 +3905,7 @@ document.getElementById('contracts-list').addEventListener('click', e => {
   if (card) {
     const id = card.dataset.id;
     focusContract(id);
-    const c = allContracts.find(x => x._id === id);
+    const c = contractById.get(id);
     if (c) {
       const city = c['Place of Performance City Name'] || '';
       const st   = c['Place of Performance State Code'] || c['Place of Performance Country Code'] || '';
@@ -3899,6 +3922,39 @@ document.getElementById('contracts-list').addEventListener('click', e => {
   }
 });
 
+// ─── Delegated actions for generated markup ──────────────────────────────────
+// Rows built from API data carry data-act + data-* payloads and are wired up by
+// a delegated listener on their (static) container, so generated markup never
+// becomes executable code. This is what lets the page drop 'unsafe-inline' for
+// data-derived handlers; the remaining inline handlers are all author-written
+// and static.
+const DELEGATED_ACTIONS = {
+  'open-company':        el => openCompanyProfile(el.dataset.name),
+  'agency-open-company': el => { closeAgencyProfile();  openCompanyProfile(el.dataset.name); },
+  'country-open-company':el => { closeCountryProfile(); openCompanyProfile(el.dataset.name); },
+  'unwatch':             el => removeFromWatchlist(el.dataset.name),
+  'admin-prefill':       el => adminPrefill(el.dataset.name),
+  'focus-contract':      el => { focusContract(el.dataset.id); closeCompanyProfile(); },
+  'close-country':       ()  => closeCountryProfile(),
+  'load-all-company':    el => loadAllCompanyContracts(el.dataset.name),
+  'load-all-country':    el => loadAllCountryContracts(el.dataset.code || null),
+  'refresh-stock':       el => refreshStockPrice(el.dataset.name),
+  'chart-range':         el => switchChartRange(el, el.dataset.range, el.dataset.interval),
+};
+
+function handleDelegatedClick(e) {
+  const el = e.target.closest('[data-act]');
+  if (!el || !e.currentTarget.contains(el)) return;
+  const fn = DELEGATED_ACTIONS[el.dataset.act];
+  if (fn) fn(el);
+}
+
+['top-movers', 'watchlist-list', 'agency-body', 'country-body',
+ 'admin-overrides-list', 'company-body'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', handleDelegatedClick);
+});
+
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 const detailPanel = document.getElementById('detail-panel');
 document.getElementById('detail-close').addEventListener('click', closeDetail);
@@ -3908,7 +3964,7 @@ function closeDetail() {
 }
 
 function field(label, value, cls = '') {
-  return `<div class="dg-field"><div class="dg-label">${label}</div><div class="dg-value ${cls}">${value || '—'}</div></div>`;
+  return `<div class="dg-field"><div class="dg-label">${esc(label)}</div><div class="dg-value ${cls}">${esc(value || '—')}</div></div>`;
 }
 
 function amtClass(amt) {
@@ -3947,7 +4003,7 @@ function showDetail(cdata) {
       const name = c['Recipient Name'] || 'Unknown';
       const div = document.createElement('div');
       div.className = 'dac-item';
-      div.innerHTML = `<span class="dac-name" title="${name}">${name}</span><span class="dac-amt ${amtClass(c._amt)}">${fmt$(c._amt)}</span>`;
+      div.innerHTML = `<span class="dac-name" title="${esc(name)}">${esc(name)}</span><span class="dac-amt ${amtClass(c._amt)}">${fmt$(c._amt)}</span>`;
       div.addEventListener('click', () => focusContract(c._id));
       dacList.appendChild(div);
     });
@@ -3958,7 +4014,7 @@ function showDetail(cdata) {
     document.getElementById('detail-type-badge').className = 'contract';
     document.getElementById('detail-agency-contracts').style.display = 'none';
 
-    const c = allContracts.find(x => x._id === cdata.contractId) || {};
+    const c = contractById.get(cdata.contractId) || {};
     const country = c['Place of Performance Country Name'] || c['Place of Performance Country Code'] || '';
     const city = c['Place of Performance City Name'] || '';
     const state = c['Place of Performance State Code'] || '';
@@ -3997,7 +4053,7 @@ const COUNTRY_MAP = {
   'egypt':'EGY','morocco':'MAR','kenya':'KEN','south africa':'ZAF',
   'ukraine':'UKR','estonia':'EST','latvia':'LVA','lithuania':'LTU',
   'finland':'FIN','bulgaria':'BGR','slovakia':'SVK','croatia':'HRV',
-  'serbia':'SRB','albania':'ALB','north macedonia':'MKD','iraq':'IRQ',
+  'serbia':'SRB','albania':'ALB','north macedonia':'MKD',
   'iran':'IRN','china':'CHN','russia':'RUS','cuba':'CUB',
 };
 const US_STATE_CODES = {
@@ -4136,6 +4192,9 @@ function clearSearch() {
 }
 
 function applyFilter() {
+  contractById.clear();
+  for (const c of allContracts) contractById.set(c._id, c);
+
   let cs = [...allContracts];
 
   // NAICS filter
@@ -4144,8 +4203,10 @@ function applyFilter() {
 
   // Timeline filter
   if (timelineFilter) {
+    // API dates can carry a time component; compare on the YYYY-MM-DD prefix only,
+    // otherwise "2025-01-15 00:00:00" <= "2025-01-15" is false and drops same-day rows
     cs = cs.filter(c => {
-      const d = c['Last Modified Date'] || '';
+      const d = (c['Last Modified Date'] || '').slice(0, 10);
       return d >= timelineFilter.start && d <= timelineFilter.end;
     });
   }
@@ -4325,7 +4386,8 @@ function normalizeUKContract(item, idx) {
   const coordKey = Object.keys(UK_REGION_COORDS).find(k => firstRegion === k || firstRegion.includes(k));
   const coords = coordKey ? UK_REGION_COORDS[coordKey] : null;
   const published = (d.publishedDate || d.awardedDate || '').slice(0, 10);
-  const id = d.noticeIdentifier || d.id || `uk_${idx}`;
+  // Content-derived fallback, not the array index — see stableContractId
+  const id = d.noticeIdentifier || d.id || `uk|${supplier}|${published}|${value}`;
   const cpvCode = typeof d.cpvCodes === 'string' ? d.cpvCodes.split(',')[0] : (d.cpvCodes?.[0]?.code || '');
   const cpvDesc = typeof d.cpvDescription === 'string' ? d.cpvDescription : (d.cpvCodes?.[0]?.text || '');
   return {
@@ -4399,7 +4461,8 @@ function normalizeCAContract(item, idx) {
   // First letter maps to province/region
   const fsa = (item.vendor_postal_code || '').trim().toUpperCase();
   const coords = CA_FSA_LETTER_COORDS[fsa[0]] || [56.1304, -106.3468];
-  const id = item.reference_number || item.procurement_id || `ca_${idx}`;
+  // Content-derived fallback, not the array index — see stableContractId
+  const id = item.reference_number || item.procurement_id || `ca|${vendor}|${date}|${value}`;
   return {
     'Award ID': id,
     'Recipient Name': vendor,
@@ -4572,19 +4635,20 @@ async function loadData() {
 
   if (raw.status === 'fulfilled') {
     setLoadProgress(88, 'Processing data...');
-    const incoming = raw.value.map((item, i) => ({
+    const incoming = raw.value.map(item => ({
       ...item,
       agency: agencyKey,
-      _id: item.generated_internal_id || item._id || String(i),
+      _id: stableContractId(item),
       _amt: item._amt != null ? item._amt : (parseFloat(item['Award Amount']) || 0),
     }));
 
     if (isSearch) {
-      // Merge search results into globe and persist to cache so they stick
+      // Merge search results into the globe only. They are deliberately NOT
+      // written to the contracts store: reads skip the cache for searches, so a
+      // write would never be served back — it would just mix search hits into
+      // the plain agency bucket and corrupt the next non-search load.
       const incomingIds = new Set(incoming.map(r => r._id));
       allContracts = [...incoming, ...allContracts.filter(r => !incomingIds.has(r._id))];
-      if (!db) try { db = await getDB(); } catch (e) {}
-      if (db) try { await cachePut(incoming); } catch (e) { console.warn('Cache write failed:', e); }
     } else if (isFullMiss) {
       // Replace stale/absent cache for this agency scope
       if (db) try { await cacheClearAgency(agencyKey); await cachePut(incoming); } catch (e) { console.warn('Cache write failed:', e); }
@@ -4638,7 +4702,8 @@ document.getElementById('search-input').addEventListener('input', e => {
     loadData();
   }, 600);
 });
-document.getElementById('sort-select').addEventListener('change', e => { sortMode = e.target.value; applyFilter(); });
+// Route through updateSetting so the header control persists like the settings-panel twin
+document.getElementById('sort-select').addEventListener('change', e => updateSetting('sort', e.target.value));
 document.getElementById('agency-filter-select').addEventListener('change', () => loadData());
 
 // ─── Admin state ──────────────────────────────────────────────────────────────
@@ -4703,11 +4768,14 @@ function adminActivate(token) {
 
 function checkAdminUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  const token  = params.get('admin_token');
+  // The token arrives in the fragment so it never reaches the server; the error
+  // code is not sensitive and stays in the query string.
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const token  = hashParams.get('admin_token');
   const err    = params.get('admin_error');
   if (token || err) {
     // Clean URL immediately
-    const clean = window.location.pathname + window.location.hash;
+    const clean = window.location.pathname + (token ? '' : window.location.hash);
     history.replaceState(null, '', clean);
   }
   if (token) {
@@ -4739,14 +4807,13 @@ function renderAdminOverridesList() {
   el.innerHTML = keys.map(name => {
     const ovr  = companyOverrides[name];
     const tags = [
-      ovr.ticker      ? `<span class="admin-ovr-tag ticker">${ovr.ticker}</span>` : '',
+      ovr.ticker      ? `<span class="admin-ovr-tag ticker">${esc(ovr.ticker)}</span>` : '',
       ovr.description ? `<span class="admin-ovr-tag desc">desc</span>` : '',
     ].join('');
-    const safeName = name.replace(/"/g, '&quot;');
     return `<div class="admin-ovr-row">
-      <span class="admin-ovr-name" title="${safeName}">${name}</span>
+      <span class="admin-ovr-name" title="${esc(name)}">${esc(name)}</span>
       <span class="admin-ovr-tags">${tags}</span>
-      <span class="admin-ovr-edit" onclick="adminPrefill(${JSON.stringify(name)})">✎</span>
+      <span class="admin-ovr-edit" data-act="admin-prefill" data-name="${esc(name)}">✎</span>
     </div>`;
   }).join('');
 }
@@ -5008,7 +5075,7 @@ function toggleTimeline() {
 
 function initTimeline() {
   if (!allContracts.length) return;
-  const dates = allContracts.map(c => c['Last Modified Date']).filter(Boolean).sort();
+  const dates = allContracts.map(c => (c['Last Modified Date'] || '').slice(0, 10)).filter(Boolean).sort();
   const minDate = dates[0];
   const maxDate = dates[dates.length - 1];
   const slider = document.getElementById('timeline-slider');
@@ -5023,6 +5090,9 @@ function initTimeline() {
   slider._maxDate = maxDate;
 }
 
+// The slider fires on every input event, and applyFilter rebuilds every globe
+// primitive plus the whole sidebar. Coalesce to at most one rebuild per frame.
+let scrubRaf = null;
 function onTimelineScrub(val) {
   const slider = document.getElementById('timeline-slider');
   const minDate = slider._minDate, maxDate = slider._maxDate;
@@ -5031,14 +5101,15 @@ function onTimelineScrub(val) {
   const maxMs = new Date(maxDate).getTime();
   const cutMs = minMs + (val / 100) * (maxMs - minMs);
   const cutDate = new Date(cutMs).toISOString().split('T')[0];
-  document.getElementById('tl-value').textContent = cutDate.slice(0,7);
   if (parseInt(val) >= 100) {
     timelineFilter = null;
     document.getElementById('tl-value').textContent = 'All dates';
   } else {
     timelineFilter = { start: minDate, end: cutDate };
+    document.getElementById('tl-value').textContent = cutDate.slice(0,7);
   }
-  applyFilter();
+  if (scrubRaf) return;
+  scrubRaf = requestAnimationFrame(() => { scrubRaf = null; applyFilter(); });
 }
 
 // ─── NAICS dropdown ───────────────────────────────────────────────────────────
@@ -5052,7 +5123,7 @@ function populateNaicsDropdown() {
   });
   const codes = Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
   sel.innerHTML = '<option value="all">All NAICS Codes</option>' +
-    codes.map(([c,d]) => `<option value="${c}">${c} – ${d ? d.slice(0,40) : '?'}</option>`).join('');
+    codes.map(([c,d]) => `<option value="${esc(c)}">${esc(c)} – ${esc(d ? d.slice(0,40) : '?')}</option>`).join('');
   if (prev !== 'all' && map[prev]) sel.value = prev;
 
   const row = document.getElementById('naics-filter-row');
@@ -5083,24 +5154,25 @@ function renderTopMovers() {
   if (currentTab !== 'movers') return;
   const el = document.getElementById('top-movers');
   if (!allContracts.length) { el.innerHTML = '<div style="padding:20px;font-size:9px;color:rgba(255,255,255,.3)">No data</div>'; return; }
-  const byName = {};
+  const byName = {}, countByName = {};
   allContracts.forEach(c => {
     const n = c['Recipient Name'] || '—';
     byName[n] = (byName[n] || 0) + c._amt;
+    countByName[n] = (countByName[n] || 0) + 1;
   });
   const top = Object.entries(byName).sort((a,b) => b[1]-a[1]).slice(0,30);
   const max = top[0]?.[1] || 1;
   el.innerHTML = top.map(([name, amt], i) => {
     const pct = Math.round(amt / max * 100);
     const w = isWatched(name) ? '★' : '☆';
-    return `<div class="tm-row" onclick="openCompanyProfile(${JSON.stringify(name)})">
+    return `<div class="tm-row" data-act="open-company" data-name="${esc(name)}">
       <div class="tm-rank">${i+1}</div>
       <div class="tm-info">
-        <div class="tm-name">${name}</div>
+        <div class="tm-name">${esc(name)}</div>
         <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin:3px 0">
           <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:2px;opacity:.7"></div>
         </div>
-        <div class="tm-meta">${allContracts.filter(c=>c['Recipient Name']===name).length} contracts</div>
+        <div class="tm-meta">${countByName[name]} contracts</div>
       </div>
       <div class="tm-amt">${fmt$(amt)}</div>
     </div>`;
@@ -5146,9 +5218,9 @@ function renderWatchlist() {
     const total = allContracts.filter(c => c['Recipient Name'] === name).reduce((s,c) => s+c._amt, 0);
     return `<div class="wl-row">
       <span class="wl-star">★</span>
-      <span class="wl-name" onclick="openCompanyProfile(${JSON.stringify(name)})">${name}</span>
+      <span class="wl-name" data-act="open-company" data-name="${esc(name)}">${esc(name)}</span>
       <span class="wl-amt">${total ? fmt$(total) : '—'}</span>
-      <button class="wl-remove" onclick="removeFromWatchlist(${JSON.stringify(name)})">✕</button>
+      <button class="wl-remove" data-act="unwatch" data-name="${esc(name)}">✕</button>
     </div>`;
   }).join('');
 }
@@ -5190,9 +5262,9 @@ function openAgencyProfile(agencyName) {
       <div class="cp-section-title">Top Recipients</div>
       ${topRecip.map(([name,amt])=>{
         const pct=Math.round(amt/maxAmt*100);
-        return `<div class="cp-agency-row" onclick="closeAgencyProfile();openCompanyProfile(${JSON.stringify(name)})">
+        return `<div class="cp-agency-row" data-act="agency-open-company" data-name="${esc(name)}">
           <div class="cp-agency-label">
-            <span class="cp-agency-name" title="${name}">${name}</span>
+            <span class="cp-agency-name" title="${esc(name)}">${esc(name)}</span>
             <span class="cp-agency-amt">${fmt$(amt)}</span>
           </div>
           <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${pct}%"></div></div>
@@ -5208,8 +5280,9 @@ function closeAgencyProfile() {
 // ─── Shareable URL state ──────────────────────────────────────────────────────
 function syncUrlState() {
   const params = new URLSearchParams();
-  const agency = document.getElementById('agency-filter-select')?.value || 'dod';
-  if (agency !== 'dod') params.set('agency', agency);
+  // 'all' is the select's default option — keep this in sync or shared links break
+  const agency = document.getElementById('agency-filter-select')?.value || 'all';
+  if (agency !== 'all') params.set('agency', agency);
   if (query) params.set('q', query);
   const naics = document.getElementById('naics-filter-select')?.value || 'all';
   if (naics !== 'all') params.set('naics', naics);

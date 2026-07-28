@@ -86,5 +86,7 @@ export default async function handler(req, res) {
     .digest('hex');
 
   res.setHeader('Cache-Control', 'no-store');
-  res.redirect(302, `${base}/?admin_token=${token}`);
+  // Fragment, not query: fragments are never sent to a server, so the session
+  // token stays out of access logs, proxies, and outbound Referer headers.
+  res.redirect(302, `${base}/#admin_token=${token}`);
 }

@@ -5,7 +5,9 @@ const RESOURCE_ID = 'fac950c0-00d5-4ec1-a4d3-9cbebf98a305';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 'no-store');
+  // Matches the UK/US proxies — the upstream resource is quarterly, so a short
+  // edge cache costs nothing in freshness and keeps load off open.canada.ca.
+  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=7200');
 
   const { limit = 500 } = req.query;
   const safeLimit = Math.min(parseInt(limit) || 500, 1000);
@@ -35,8 +37,7 @@ export default async function handler(req, res) {
     }
 
     const records = data.result?.records || [];
-    const sampleKeys = records[0] ? Object.keys(records[0]) : [];
-    return res.status(200).json({ result: { records }, _debug: { sampleKeys, count: records.length, total: data.result?.total } });
+    return res.status(200).json({ result: { records, total: data.result?.total } });
   } catch (e) {
     return res.status(502).json({ error: e.message, type: e.constructor?.name });
   }
