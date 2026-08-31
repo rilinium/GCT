@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Global Contract Tracker</title>
   <link rel="icon" type="image/x-icon" href="gcticon.ico">
   <link rel="manifest" href="manifest.json">
@@ -27,7 +27,7 @@
   <meta name="twitter:description" content="Real-time 3D globe of US government contracts. 1,000+ active DoD awards across 19 countries."/>
   <meta name="twitter:image" content="https://gct.rilinium.com/gctbanner.png"/>
 
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <script defer src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js" onload="window.__resolveCesiumReady && window.__resolveCesiumReady()"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
@@ -43,6 +43,17 @@
       --accent-border: rgba(0,255,136,.25);
       --bg-base: 0, 4, 18;
       --bg-deep: 0, 2, 12;
+      /* Dim/secondary readout text — mint-tinted, not gray, and holds 4.5:1+ against --bg-base */
+      --dim: rgba(170,255,204,.55);
+      /* Reserved semantic hues — one category, one meaning, tokenized like --accent so a retune is a one-line edit */
+      --alert-red: #ff4444;
+      --alert-red-rgb: 255, 68, 68;
+      --amber-flag: #ffcc00;
+      --amber-flag-rgb: 255, 204, 0;
+      --recon-cyan: #00aaff;
+      --recon-cyan-rgb: 0, 170, 255;
+      --intel-violet: #c060ff;
+      --intel-violet-rgb: 192, 96, 255;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; color: #fff; font-family: 'Share Tech Mono', 'Courier New', monospace; overflow: hidden; height: 100vh; }
@@ -55,7 +66,9 @@
     }
     body.no-scanlines::after { opacity: 0; }
 
-    #cesiumContainer { position: absolute; inset: 0; }
+    /* touch-action: none keeps pinch/pan gestures over the globe routed to Cesium's own camera
+       controls instead of the browser's page-zoom/scroll, now that page-level zoom lock is removed. */
+    #cesiumContainer { position: absolute; inset: 0; touch-action: none; }
 
     /* Hide Cesium default chrome */
     .cesium-viewer-toolbar,
@@ -78,7 +91,7 @@
     }
     @keyframes glitch {
       0%,90%,100% { transform: translate(0); clip-path: none; }
-      91% { transform: translate(-2px,0); clip-path: polygon(0 20%,100% 20%,100% 40%,0 40%); color: #00aaff; }
+      91% { transform: translate(-2px,0); clip-path: polygon(0 20%,100% 20%,100% 40%,0 40%); color: var(--recon-cyan); }
       93% { transform: translate(2px,0);  clip-path: polygon(0 60%,100% 60%,100% 80%,0 80%); color: #ff0044; }
       95% { transform: translate(0);      clip-path: none; }
     }
@@ -280,11 +293,11 @@
     }
     .live-pill {
       display: flex; align-items: center; gap: 5px;
-      padding: 3px 10px; border: 1px solid rgba(255,68,68,.6);
+      padding: 3px 10px; border: 1px solid rgba(var(--alert-red-rgb),.6);
       border-radius: 20px; font-size: 9px; color: #ff6666; letter-spacing: 2px;
       background: rgba(255,50,50,.08); box-shadow: 0 0 8px rgba(255,50,50,.2);
     }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4444; animation: blink 1s ease-in-out infinite; box-shadow: 0 0 6px #ff4444; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--alert-red); animation: blink 1s ease-in-out infinite; box-shadow: 0 0 6px var(--alert-red); }
     .header-btn {
       background: rgba(var(--accent-rgb),.06); border: 1px solid rgba(var(--accent-rgb),.3);
       border-radius: 3px; color: var(--accent); font-family: 'Share Tech Mono', monospace;
@@ -301,7 +314,7 @@
     #stat-daterange-bar {
       position: absolute; top: 62px; left: 20px; z-index: 10;
       font-family: 'Share Tech Mono', monospace; font-size: 8px;
-      color: rgba(255,255,255,.3); letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--dim); letter-spacing: 1.5px; text-transform: uppercase;
     }
     #stat-daterange-bar span { color: rgba(var(--accent-rgb), .55); }
     #stats-bar {
@@ -348,12 +361,12 @@
     }
     #agency-filter-row { margin-bottom: 7px; }
     #agency-filter-row select {
-      width: 100%; background: rgba(0,30,60,.6); border: 1px solid rgba(0,170,255,.35);
+      width: 100%; background: rgba(0,30,60,.6); border: 1px solid rgba(var(--recon-cyan-rgb),.35);
       border-radius: 3px; padding: 6px 10px; color: #00ccff; font-size: 10px;
       font-family: 'Share Tech Mono', monospace; outline: none; cursor: pointer;
-      box-shadow: 0 0 8px rgba(0,170,255,.1) inset;
+      box-shadow: 0 0 8px rgba(var(--recon-cyan-rgb),.1) inset;
     }
-    #agency-filter-row select:focus { border-color: #00aaff; box-shadow: 0 0 10px rgba(0,170,255,.25); }
+    #agency-filter-row select:focus { border-color: var(--recon-cyan); box-shadow: 0 0 10px rgba(var(--recon-cyan-rgb),.25); }
     #agency-filter-row select option { background: #000d1f; color: #ccc; }
     #filter-row { display: flex; gap: 7px; }
     #search-wrap {
@@ -366,7 +379,7 @@
       box-sizing: border-box;
     }
     #search-input:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb),.2); }
-    #search-input::placeholder { color: #2a4a3a; }
+    #search-input::placeholder { color: var(--dim); }
     #search-badge {
       position: absolute; right: 26px; top: 50%; transform: translateY(-50%);
       font-size: 9px; font-family: 'Share Tech Mono', monospace;
@@ -374,19 +387,21 @@
     }
     #search-badge.type-location { background: rgba(0,180,255,.15); color: #00b4ff; border: 1px solid rgba(0,180,255,.3); }
     #search-badge.type-keyword  { background: rgba(255,200,0,.12);  color: #ffc800; border: 1px solid rgba(255,200,0,.25); }
-    #search-badge.type-agency   { background: rgba(160,80,255,.15); color: #c060ff; border: 1px solid rgba(160,80,255,.3); }
+    #search-badge.type-agency   { background: rgba(160,80,255,.15); color: var(--intel-violet); border: 1px solid rgba(160,80,255,.3); }
     #search-badge.type-loading  { background: rgba(var(--accent-rgb),.1);   color: var(--accent); border: 1px solid rgba(var(--accent-rgb),.2); animation: pulse 1s infinite; }
     #search-clear {
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; color: #556; font-size: 11px; cursor: pointer;
+      background: none; border: none; color: var(--dim); font-size: 11px; cursor: pointer;
       padding: 0 2px; line-height: 1; transition: color .15s;
     }
     #search-clear:hover { color: var(--accent); }
     #sort-select {
       background: rgba(255,255,255,.04); border: 1px solid rgba(var(--accent-rgb),.2);
-      border-radius: 3px; padding: 6px 8px; color: #668; font-size: 9px;
+      border-radius: 3px; padding: 6px 8px; color: var(--dim); font-size: 9px;
       font-family: 'Share Tech Mono', monospace; outline: none; cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
     }
+    #sort-select:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb),.2); }
     #contracts-list { flex: 1; overflow-y: auto; padding: 4px 0; }
     #contracts-list::-webkit-scrollbar { width: 2px; }
     #contracts-list::-webkit-scrollbar-track { background: transparent; }
@@ -489,7 +504,7 @@
     #cp-price-change { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px; }
     #cp-price-change.up { color: #00ff88; }
     #cp-price-change.down { color: #ff4466; }
-    #cp-market-state { font-size: 8px; color: rgba(255,255,255,.3); letter-spacing: 1px; margin-top: 2px; font-family: 'Share Tech Mono', monospace; }
+    #cp-market-state { font-size: 8px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; font-family: 'Share Tech Mono', monospace; }
     #cp-yf-attribution { margin-top: 10px; display: flex; align-items: center; gap: 6px; opacity: .35; }
     #cp-yf-attribution img { height: 14px; width: auto; filter: grayscale(1) brightness(2); }
     #cp-chart-wrap { margin-top: 10px; }
@@ -497,7 +512,7 @@
     .cp-range-btns { display: flex; gap: 4px; margin-top: 6px; }
     .cp-range-btn {
       flex: 1; padding: 3px 0; background: none; border: 1px solid rgba(var(--accent-rgb),.15);
-      color: rgba(255,255,255,.4); font-family: 'Share Tech Mono', monospace; font-size: 8px;
+      color: var(--dim); font-family: 'Share Tech Mono', monospace; font-size: 8px;
       letter-spacing: 1px; border-radius: 2px; cursor: pointer; transition: all .12s;
     }
     .cp-range-btn:hover { border-color: rgba(var(--accent-rgb),.4); color: rgba(255,255,255,.7); }
@@ -510,10 +525,10 @@
     }
     .cp-load-all-btn:hover { background: rgba(var(--accent-rgb),.14); }
     .cp-load-all-btn:disabled { opacity: .4; cursor: default; }
-    .cp-stock-hint { font-size: 9px; color: rgba(255,255,255,.3); letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; }
+    .cp-stock-hint { font-size: 9px; color: var(--dim); letter-spacing: 1px; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; }
     .cp-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .cp-stat-box { background: rgba(var(--accent-rgb),.04); border: 1px solid rgba(var(--accent-rgb),.1); border-radius: 4px; padding: 8px 10px; }
-    .cp-stat-label { font-size: 7px; color: rgba(255,255,255,.4); letter-spacing: 2px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; }
+    .cp-stat-label { font-size: 7px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; margin-bottom: 4px; }
     .cp-stat-value { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--accent); font-weight: 700; }
     .cp-stat-value .amt-suffix { font-size: 9px; color: rgba(var(--accent-rgb),.5); font-weight: 400; margin-left: 1px; }
     .cp-agency-row { margin-bottom: 8px; }
@@ -526,8 +541,8 @@
     .cp-contract-row:hover { background: rgba(var(--accent-rgb),.06); margin: 0 -14px; padding: 7px 14px; }
     .cp-contract-row:last-child { border-bottom: none; }
     .cp-c-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-    .cp-c-agency { font-size: 8px; color: rgba(255,255,255,.4); font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
-    .cp-c-date { font-size: 8px; color: rgba(255,255,255,.3); flex-shrink: 0; margin-left: 8px; }
+    .cp-c-agency { font-size: 8px; color: var(--dim); font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .cp-c-date { font-size: 8px; color: var(--dim); flex-shrink: 0; margin-left: 8px; }
     .cp-c-meta { font-size: 8px; color: rgba(255,255,255,.35); font-family: 'Share Tech Mono', monospace; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cp-info-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(var(--accent-rgb),.04); font-family: 'Share Tech Mono', monospace; }
     .cp-info-row:last-child { border-bottom: none; }
@@ -535,10 +550,10 @@
     .cp-info-val { font-size: 9px; color: rgba(255,255,255,.75); word-break: break-word; }
     .c-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
     .c-amount { font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; }
-    .c-location { font-size: 9px; color: #446655; }
+    .c-location { font-size: 9px; color: var(--dim); }
     .c-agency { font-size: 9px; color: #558866; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-    .c-date { font-size: 9px; color: #334433; }
-    .t-mega   { color: #ff4444; text-shadow: 0 0 8px rgba(255,68,68,.6); }
+    .c-date { font-size: 9px; color: var(--dim); }
+    .t-mega   { color: var(--alert-red); text-shadow: 0 0 8px rgba(var(--alert-red-rgb),.6); }
     .t-large  { color: #ff8844; text-shadow: 0 0 8px rgba(255,136,68,.5); }
     .t-medium { color: #ffcc44; text-shadow: 0 0 8px rgba(255,204,68,.4); }
     .t-small  { color: #44ffcc; text-shadow: 0 0 6px rgba(68,255,204,.4); }
@@ -631,7 +646,7 @@
     .tm-rank { font-family: 'Orbitron', monospace; font-size: 8px; color: rgba(var(--accent-rgb),.35); width: 16px; flex-shrink: 0; text-align: right; }
     .tm-info { flex: 1; min-width: 0; }
     .tm-name { font-size: 10px; color: #cceedd; font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
-    .tm-meta { font-size: 8px; color: rgba(255,255,255,.3); }
+    .tm-meta { font-size: 8px; color: var(--dim); }
     .tm-amt { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; flex-shrink: 0; }
 
     /* ── Watchlist ── */
@@ -649,7 +664,7 @@
     #watchlist-list { overflow-y: auto; }
     .wl-row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-top: 1px solid rgba(var(--accent-rgb),.04); cursor: pointer; }
     .wl-row:hover { background: rgba(var(--accent-rgb),.06); }
-    .wl-star { color: #ffcc00; font-size: 10px; flex-shrink: 0; }
+    .wl-star { color: var(--amber-flag); font-size: 10px; flex-shrink: 0; }
     .wl-name { flex: 1; font-size: 9px; color: #cceedd; font-family: 'Share Tech Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .wl-amt { font-size: 9px; font-family: 'Orbitron', monospace; font-weight: 700; flex-shrink: 0; margin-right: 4px; }
     .wl-remove { color: rgba(255,255,255,.2); font-size: 10px; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; }
@@ -659,8 +674,8 @@
       color: rgba(255,200,0,.45); font-size: 13px; padding: 2px 7px;
       border-radius: 3px; cursor: pointer; transition: all .15s; flex-shrink: 0; line-height: 1;
     }
-    #watch-btn.watching { border-color: #ffcc00; color: #ffcc00; background: rgba(255,200,0,.1); }
-    #watch-btn:hover { border-color: #ffcc00; color: #ffcc00; }
+    #watch-btn.watching { border-color: var(--amber-flag); color: var(--amber-flag); background: rgba(255,200,0,.1); }
+    #watch-btn:hover { border-color: var(--amber-flag); color: var(--amber-flag); }
 
     /* ── NAICS filter ── */
     #naics-filter-row { padding: 0 10px 8px; display: none; }
@@ -668,7 +683,9 @@
       width: 100%; background: rgba(0,0,0,.4); border: 1px solid rgba(var(--accent-rgb),.2);
       color: rgba(255,255,255,.5); font-size: 9px; font-family: 'Share Tech Mono', monospace;
       padding: 5px 8px; border-radius: 3px; cursor: pointer; outline: none;
+      transition: border-color .2s, box-shadow .2s;
     }
+    #naics-filter-select:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(var(--accent-rgb),.2); }
 
     /* ── Heatmap / Timeline header buttons ── */
     .header-btn.active {
@@ -683,13 +700,14 @@
       pointer-events: none;
     }
     #timeline-wrap.visible { display: block; pointer-events: all; }
-    #timeline-labels { display: flex; justify-content: space-between; font-size: 8px; color: #334433; letter-spacing: .5px; margin-bottom: 4px; font-family: 'Share Tech Mono', monospace; }
+    #timeline-labels { display: flex; justify-content: space-between; font-size: 8px; color: var(--dim); letter-spacing: .5px; margin-bottom: 4px; font-family: 'Share Tech Mono', monospace; }
     #timeline-value { color: var(--accent); text-align: center; }
     #timeline-slider {
       width: 100%; -webkit-appearance: none; appearance: none;
       height: 3px; background: rgba(var(--accent-rgb),.2); border-radius: 2px; outline: none; cursor: pointer;
       accent-color: var(--accent);
     }
+    #timeline-slider:focus-visible { box-shadow: 0 0 0 2px rgba(var(--accent-rgb),.4); }
     #timeline-slider::-webkit-slider-thumb {
       -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
       background: var(--accent); cursor: pointer; box-shadow: 0 0 8px rgba(var(--accent-rgb),.7);
@@ -735,10 +753,11 @@
       border-radius: 2px; overflow: hidden;
     }
     #loading-bar-fill {
-      height: 100%; width: 5%; background: var(--accent);
+      height: 100%; width: 100%; background: var(--accent);
       box-shadow: 0 0 8px rgba(var(--accent-rgb),.8);
       border-radius: 2px;
-      transition: width .4s cubic-bezier(.4,0,.2,1);
+      transform: scaleX(.05); transform-origin: left;
+      transition: transform .4s cubic-bezier(.4,0,.2,1);
     }
     #loading-sub {
       margin-top: 10px; font-family: 'Share Tech Mono', monospace;
@@ -776,6 +795,13 @@
     .admin-close {
       margin-left: auto; background: none; border: none; color: rgba(var(--accent-rgb),.4);
       font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1;
+      position: relative;
+    }
+    /* Invisible hit-area expansion to a real 44x44 touch target without changing the visual glyph size */
+    .admin-close::before, #settings-close::before, #detail-close::before, #admin-badge::before {
+      content: ''; position: absolute; inset: 50%;
+      width: max(100%, 44px); height: max(100%, 44px);
+      transform: translate(-50%, -50%);
     }
     .admin-close:hover { color: var(--accent); }
     .admin-section { margin-bottom: 20px; }
@@ -847,7 +873,7 @@
     }
     #tooltip h3 { font-family: 'Orbitron', monospace; font-size: 9px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 0 8px rgba(var(--accent-rgb),.5); }
     .tt-row { display: flex; gap: 8px; margin-bottom: 3px; font-size: 10px; align-items: baseline; }
-    .tt-lbl { color: #3a6a5a; min-width: 65px; flex-shrink: 0; }
+    .tt-lbl { color: var(--dim); min-width: 65px; flex-shrink: 0; }
     .tt-val { color: #aaffcc; font-weight: 600; flex: 1; }
 
     /* ── Detail Panel ── */
@@ -870,14 +896,15 @@
       padding: 2px 8px; border-radius: 2px; margin-top: 5px; display: inline-block;
     }
     #detail-type-badge.contract { background: rgba(255,100,100,.1); color: #ff8888; border: 1px solid rgba(255,100,100,.35); box-shadow: 0 0 8px rgba(255,80,80,.15); }
-    #detail-type-badge.agency   { background: rgba(0,170,255,.1); color: #00aaff; border: 1px solid rgba(0,170,255,.35); box-shadow: 0 0 8px rgba(0,170,255,.15); }
+    #detail-type-badge.agency   { background: rgba(var(--recon-cyan-rgb),.1); color: var(--recon-cyan); border: 1px solid rgba(var(--recon-cyan-rgb),.35); box-shadow: 0 0 8px rgba(var(--recon-cyan-rgb),.15); }
     #detail-close {
       background: none; border: 1px solid rgba(255,255,255,.12); border-radius: 3px;
-      color: #445; font-size: 13px; width: 26px; height: 26px; cursor: pointer;
+      color: var(--dim); font-size: 13px; width: 26px; height: 26px; cursor: pointer;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
       transition: border-color .15s, color .15s, box-shadow .15s;
+      position: relative;
     }
-    #detail-close:hover { border-color: #ff4444; color: #ff4444; box-shadow: 0 0 8px rgba(255,50,50,.3); }
+    #detail-close:hover { border-color: var(--alert-red); color: var(--alert-red); box-shadow: 0 0 8px rgba(255,50,50,.3); }
     #detail-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 10px 24px; margin-bottom: 10px;
@@ -886,13 +913,13 @@
     .dg-label { font-size: 8px; color: #2a5a4a; text-transform: uppercase; letter-spacing: 1.5px; }
     .dg-value { font-size: 11px; color: #aaccbb; font-weight: 600; }
     .dg-value.green { color: var(--accent); text-shadow: 0 0 6px rgba(var(--accent-rgb),.4); }
-    .dg-value.blue  { color: #00aaff; text-shadow: 0 0 6px rgba(0,170,255,.4); }
-    .dg-value.amount-1b  { color: #ff4444; text-shadow: 0 0 8px rgba(255,68,68,.5); }
+    .dg-value.blue  { color: var(--recon-cyan); text-shadow: 0 0 6px rgba(var(--recon-cyan-rgb),.4); }
+    .dg-value.amount-1b  { color: var(--alert-red); text-shadow: 0 0 8px rgba(var(--alert-red-rgb),.5); }
     .dg-value.amount-100m{ color: #ff8844; text-shadow: 0 0 8px rgba(255,136,68,.4); }
     .dg-value.amount-10m { color: #ffcc44; text-shadow: 0 0 8px rgba(255,204,68,.4); }
     .dg-value.amount-low { color: #44ffcc; text-shadow: 0 0 6px rgba(68,255,204,.3); }
     #detail-desc {
-      font-size: 10px; color: #446655; line-height: 1.6; border-top: 1px solid rgba(var(--accent-rgb),.06);
+      font-size: 10px; color: var(--dim); line-height: 1.6; border-top: 1px solid rgba(var(--accent-rgb),.06);
       padding-top: 9px; margin-top: 2px;
     }
     #detail-agency-contracts { margin-top: 9px; border-top: 1px solid rgba(var(--accent-rgb),.06); padding-top: 9px; }
@@ -1021,7 +1048,7 @@
     .tp-step a:hover { border-bottom-color: var(--accent); }
     .tp-step strong { color: #aaccbb; }
     .tp-note {
-      font-size: 9px; color: #334433; margin-bottom: 16px;
+      font-size: 9px; color: var(--dim); margin-bottom: 16px;
       display: flex; align-items: center; gap: 6px;
     }
     .tp-note::before { content: '🔒'; font-size: 10px; }
@@ -1072,8 +1099,9 @@
     }
     #settings-close {
       background: none; border: 1px solid rgba(var(--accent-rgb),.2); border-radius: 3px;
-      color: #556; font-size: 14px; cursor: pointer; padding: 2px 7px;
+      color: var(--dim); font-size: 14px; cursor: pointer; padding: 2px 7px;
       transition: all .15s;
+      position: relative;
     }
     #settings-close:hover { color: var(--accent); border-color: var(--accent-border); }
 
@@ -1219,12 +1247,12 @@
     }
     #disclaimer-modal::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, #ffcc00, transparent);
+      background: linear-gradient(90deg, transparent, var(--amber-flag), transparent);
       border-radius: 6px 6px 0 0;
     }
     #disclaimer-modal .dm-label {
       font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 900;
-      color: #ffcc00; letter-spacing: 5px; text-transform: uppercase;
+      color: var(--amber-flag); letter-spacing: 5px; text-transform: uppercase;
       text-shadow: 0 0 20px rgba(255,200,0,.5); margin-bottom: 8px;
     }
     #disclaimer-modal h2 {
@@ -1239,7 +1267,7 @@
     #disclaimer-ack {
       width: 100%; margin-top: 8px;
       background: rgba(255,200,0,.1); border: 1px solid rgba(255,200,0,.4);
-      border-radius: 3px; color: #ffcc00; font-family: 'Orbitron', monospace;
+      border-radius: 3px; color: var(--amber-flag); font-family: 'Orbitron', monospace;
       font-size: 11px; padding: 12px; cursor: pointer; letter-spacing: 3px;
       transition: background .15s, box-shadow .15s; text-transform: uppercase;
       font-weight: 700;
@@ -1258,7 +1286,7 @@
     #settings-reset:hover { background: rgba(255,80,80,.15); box-shadow: 0 0 10px rgba(255,80,80,.2); }
 
     /* ── Light theme ── */
-    body.theme-light { --bg-base: 245,247,255; --bg-deep: 234,237,252; }
+    body.theme-light { --bg-base: 245,247,255; --bg-deep: 234,237,252; --dim: rgba(26,32,58,.65); }
     body.theme-light #header {
       background: linear-gradient(to bottom, rgba(240,242,255,.97) 60%, transparent);
     }
@@ -1300,12 +1328,12 @@
     /* Tier amount colors — darken neons for light bg */
     body.theme-light .t-mega   { color: #cc1111; text-shadow: none; }
     body.theme-light .t-large  { color: #cc5500; text-shadow: none; }
-    body.theme-light .t-medium { color: #997700; text-shadow: none; }
+    body.theme-light .t-medium { color: #8a6200; text-shadow: none; }
     body.theme-light .t-small  { color: #007a66; text-shadow: none; }
     /* Detail panel amount tiers */
     body.theme-light .dg-value.amount-1b   { color: #cc1111; text-shadow: none; }
     body.theme-light .dg-value.amount-100m { color: #cc5500; text-shadow: none; }
-    body.theme-light .dg-value.amount-10m  { color: #997700; text-shadow: none; }
+    body.theme-light .dg-value.amount-10m  { color: #8a6200; text-shadow: none; }
     body.theme-light .dg-value.amount-low  { color: #007a66; text-shadow: none; }
     /* Sidebar tabs (LIST / TOP $ / WATCH) */
     body.theme-light .stab { color: rgba(10,15,50,.45); }
@@ -1349,17 +1377,17 @@
 <body>
 
 <div id="loading"><div class="spinner"></div><p id="loading-status">Initializing...</p><div id="loading-bar-wrap"><div id="loading-bar-fill"></div></div><div id="loading-sub"></div><div id="loading-error"></div></div>
-<div id="cesiumContainer"></div>
+<div id="cesiumContainer" role="main" aria-label="Interactive 3D globe of government contracts"></div>
 
 <!-- Admin panel -->
 <div id="admin-modal">
-  <div id="admin-panel">
-    <h2>⬡ Admin <button class="admin-close" onclick="closeAdminPanel()">✕</button></h2>
+  <div id="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-panel-title">
+    <h2 id="admin-panel-title">⬡ Admin <button class="admin-close" onclick="closeAdminPanel()" aria-label="Close admin panel">✕</button></h2>
 
     <!-- Login section (shown when not authenticated) -->
     <div id="admin-login-section" class="admin-section">
       <div class="admin-section-title">Authentication</div>
-      <p style="font-size:9px;color:rgba(255,255,255,.4);margin:0 0 14px;line-height:1.6">
+      <p style="font-size:9px;color:var(--dim);margin:0 0 14px;line-height:1.6">
         Sign in with your GitHub account to manage company overrides.
       </p>
       <a id="admin-github-btn" href="/api/admin/auth" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
@@ -1391,7 +1419,7 @@
       <div id="admin-save-status" class="admin-status"></div>
 
       <div class="admin-section-title" style="margin-top:20px">Active overrides</div>
-      <div id="admin-overrides-list" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(255,255,255,.3)">Loading…</div>
+      <div id="admin-overrides-list" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim)">Loading…</div>
 
       <div class="admin-btn-row" style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
         <button class="admin-btn danger" onclick="adminLogout()">Sign out</button>
@@ -1399,13 +1427,13 @@
     </div>
   </div>
 </div>
-<div id="admin-badge" onclick="openAdminPanel()">⬡ admin</div>
+<div id="admin-badge" role="button" tabindex="0" onclick="openAdminPanel()">⬡ admin</div>
 
 <!-- First-load disclaimer modal -->
 <div id="disclaimer-overlay">
-<div id="disclaimer-modal">
+<div id="disclaimer-modal" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
   <div class="dm-label">Notice</div>
-  <h2>Data Disclaimer</h2>
+  <h2 id="disclaimer-title">Data Disclaimer</h2>
   <p>The contract data displayed on this tracker may be <strong>incorrect, incomplete, or outdated</strong>. Information is sourced from public government databases and may not reflect the current state of any contract, award, or agency relationship.</p>
   <p>This tool is intended for <strong>informational purposes only</strong>. Do not rely on this data for legal, financial, or procurement decisions.</p>
   <button id="disclaimer-ack" onclick="dismissDisclaimer()">I Understand</button>
@@ -1414,9 +1442,9 @@
 
 <!-- Token prompt overlay -->
 <div id="token-overlay">
-<div id="token-prompt">
+<div id="token-prompt" role="dialog" aria-modal="true" aria-labelledby="token-prompt-title">
   <div class="tp-logo">Global Contract Tracker</div>
-  <h2>Connect Cesium Ion</h2>
+  <h2 id="token-prompt-title">Connect Cesium Ion</h2>
   <div class="tp-sub">A free Cesium Ion account is required to render the 3D globe.</div>
 
   <div class="tp-steps">
@@ -1444,7 +1472,7 @@
 </div>
 </div>
 
-<div id="header">
+<div id="header" role="banner">
   <div id="header-top">
     <h1><span class="title-long">Global Contract Tracker</span><span class="title-short">GCT</span></h1>
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
@@ -1454,10 +1482,10 @@
       <button id="timeline-btn" class="header-btn" onclick="toggleTimeline()" title="Timeline scrubber (T)">TIMELINE</button>
       <button id="refresh-btn" class="header-btn" onclick="loadData()">REFRESH</button>
       <button class="header-btn" onclick="openSettings()">⚙ SETTINGS</button>
-      <div id="data-source-picker">
-        <button class="dsrc-btn active" data-src="us" onclick="switchDataSource('us')" title="United States">🇺🇸</button>
-        <button class="dsrc-btn" data-src="uk" onclick="switchDataSource('uk')" title="United Kingdom">🇬🇧</button>
-        <button class="dsrc-btn" data-src="ca" onclick="switchDataSource('ca')" title="Canada">🇨🇦</button>
+      <div id="data-source-picker" role="group" aria-label="Data source">
+        <button class="dsrc-btn active" data-src="us" onclick="switchDataSource('us')" title="United States" aria-label="United States" aria-pressed="true">🇺🇸</button>
+        <button class="dsrc-btn" data-src="uk" onclick="switchDataSource('uk')" title="United Kingdom" aria-label="United Kingdom" aria-pressed="false">🇬🇧</button>
+        <button class="dsrc-btn" data-src="ca" onclick="switchDataSource('ca')" title="Canada" aria-label="Canada" aria-pressed="false">🇨🇦</button>
       </div>
     </div>
   </div>
@@ -1472,8 +1500,8 @@
   <div class="stat-card"><div class="stat-label">Largest Award</div><div class="stat-value" id="stat-max">—</div></div>
 </div>
 
-<div id="sidebar">
-  <div id="sidebar-handle" onclick="toggleSidebarCollapse()"></div>
+<div id="sidebar" role="complementary" aria-label="Contract list and filters">
+  <div id="sidebar-handle" role="button" tabindex="0" aria-label="Collapse or expand contract list" onclick="toggleSidebarCollapse()"></div>
   <div id="sidebar-header">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <h2>Recent Awards</h2>
@@ -1570,7 +1598,7 @@
   <div id="watchlist-section" style="display:none">
     <div id="watchlist-header">
       <span>★ Watchlist</span>
-      <span id="wl-count" style="font-size:9px;color:rgba(255,255,255,.4)"></span>
+      <span id="wl-count" style="font-size:9px;color:var(--dim)"></span>
     </div>
     <div id="watchlist-list"></div>
   </div>
@@ -1616,7 +1644,7 @@
   <div class="tt-row"><span class="tt-lbl">Description</span><span class="tt-val" id="tt-desc"></span></div>
 </div>
 
-<div id="detail-panel">
+<div id="detail-panel" role="region" aria-label="Contract details">
   <div id="detail-panel-header">
     <div>
       <div id="detail-title"></div>
@@ -1640,10 +1668,10 @@
 
 <!-- Settings overlay + panel -->
 <div id="settings-overlay" onclick="closeSettingsIfOutside(event)">
-  <div id="settings-panel">
+  <div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div id="settings-header">
-      <h2>⚙ Configuration</h2>
-      <button id="settings-close" onclick="closeSettings()">✕</button>
+      <h2 id="settings-title">⚙ Configuration</h2>
+      <button id="settings-close" onclick="closeSettings()" aria-label="Close settings">✕</button>
     </div>
     <div id="settings-body">
 
@@ -1828,13 +1856,13 @@
 
         <div class="s-row" style="flex-direction:column;align-items:flex-start;gap:10px">
           <span class="s-label">Accent color</span>
-          <div id="accent-swatches">
-            <div class="accent-swatch active" data-color="#00ff88" style="background:#00ff88" onclick="setAccent('#00ff88',this)"></div>
-            <div class="accent-swatch" data-color="#00d4ff" style="background:#00d4ff" onclick="setAccent('#00d4ff',this)"></div>
-            <div class="accent-swatch" data-color="#4488ff" style="background:#4488ff" onclick="setAccent('#4488ff',this)"></div>
-            <div class="accent-swatch" data-color="#ff8800" style="background:#ff8800" onclick="setAccent('#ff8800',this)"></div>
-            <div class="accent-swatch" data-color="#cc44ff" style="background:#cc44ff" onclick="setAccent('#cc44ff',this)"></div>
-            <div class="accent-swatch" data-color="#ff4466" style="background:#ff4466" onclick="setAccent('#ff4466',this)"></div>
+          <div id="accent-swatches" role="group" aria-label="Accent color">
+            <div class="accent-swatch active" data-color="#00ff88" style="background:#00ff88" onclick="setAccent('#00ff88',this)" role="button" tabindex="0" aria-label="Green accent" aria-pressed="true"></div>
+            <div class="accent-swatch" data-color="#00d4ff" style="background:#00d4ff" onclick="setAccent('#00d4ff',this)" role="button" tabindex="0" aria-label="Cyan accent" aria-pressed="false"></div>
+            <div class="accent-swatch" data-color="#4488ff" style="background:#4488ff" onclick="setAccent('#4488ff',this)" role="button" tabindex="0" aria-label="Blue accent" aria-pressed="false"></div>
+            <div class="accent-swatch" data-color="#ff8800" style="background:#ff8800" onclick="setAccent('#ff8800',this)" role="button" tabindex="0" aria-label="Orange accent" aria-pressed="false"></div>
+            <div class="accent-swatch" data-color="#cc44ff" style="background:#cc44ff" onclick="setAccent('#cc44ff',this)" role="button" tabindex="0" aria-label="Purple accent" aria-pressed="false"></div>
+            <div class="accent-swatch" data-color="#ff4466" style="background:#ff4466" onclick="setAccent('#ff4466',this)" role="button" tabindex="0" aria-label="Red accent" aria-pressed="false"></div>
           </div>
         </div>
 
@@ -1921,11 +1949,11 @@
 
 <div id="footer">
   <div id="legend">
-    <div class="leg"><div class="leg-dot" style="background:#ff4444"></div>$1B+</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--alert-red)"></div>$1B+</div>
     <div class="leg"><div class="leg-dot" style="background:#ff8844"></div>$100M+</div>
     <div class="leg"><div class="leg-dot" style="background:#ffcc44"></div>$10M+</div>
     <div class="leg"><div class="leg-dot" style="background:#44ffcc"></div>&lt;$10M</div>
-    <div class="leg"><div class="leg-dot" style="background:#00aaff"></div>Agency</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--recon-cyan)"></div>Agency</div>
   </div>
   <div id="last-updated">Last updated: —</div>
   <div id="disclaimer-text">Data may be incorrect, incomplete, or outdated.</div>
@@ -1945,6 +1973,10 @@ function maybeShowDisclaimer() {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/';
+
+// Cesium.js loads with `defer` so it never blocks the initial HTML parse/paint;
+// this resolves once it's actually available, so boot() can await it only when needed.
+const cesiumReady = new Promise(resolve => { window.__resolveCesiumReady = resolve; });
 
 // ─── Coordinate tables ────────────────────────────────────────────────────────
 const US_STATES = {
@@ -2520,8 +2552,11 @@ function applyTextScale() {
 
 function setAccent(hex, el) {
   CFG.accent = hex;
-  document.querySelectorAll('.accent-swatch').forEach(s => s.classList.remove('active'));
-  if (el) el.classList.add('active');
+  document.querySelectorAll('.accent-swatch').forEach(s => {
+    s.classList.remove('active');
+    s.setAttribute('aria-pressed', 'false');
+  });
+  if (el) { el.classList.add('active'); el.setAttribute('aria-pressed', 'true'); }
   applyAccentVars(hex);
   saveSettings();
 }
@@ -2611,7 +2646,7 @@ function setLoadProgress(pct, label, sub) {
   const fill = document.getElementById('loading-bar-fill');
   const status = document.getElementById('loading-status');
   const subEl = document.getElementById('loading-sub');
-  if (fill) fill.style.width = pct + '%';
+  if (fill) fill.style.transform = `scaleX(${pct / 100})`;
   if (status && label) status.textContent = label;
   if (subEl) subEl.textContent = sub || '';
 }
@@ -3235,8 +3270,8 @@ function renderCompanySummaryHtml(stats, fromApi) {
     : `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
   const isExtSrc = dataSource === 'uk' || dataSource === 'ca';
   const sourceNote = (fromApi || isExtSrc)
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttr}${isExtSrc ? '' : ' · Since Oct 2007'}</div>`
-    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttr}</div>
+    ? `<div style="font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttr}${isExtSrc ? '' : ' · Since Oct 2007'}</div>`
+    : `<div style="font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttr}</div>
        <button class="cp-load-all-btn" data-act="load-all-company" data-name="${esc(stats.name)}">⬇ Load All from API</button>`;
   return `
     <div class="cp-section-title">Summary</div>
@@ -3310,7 +3345,7 @@ function renderCompanyAgenciesHtml(stats) {
 }
 
 function renderCompanyContractsHtml(stats) {
-  if (!stats.contracts.length) return `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace">No contracts found.</div>`;
+  if (!stats.contracts.length) return `<div style="padding:20px 14px;font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace">No contracts found.</div>`;
   const rows = stats.contracts.slice(0, 100).map(c => {
     const ceiling = parseFloat(c['Base and All Options Value']) || 0;
     const ceilLine = ceiling > c._amt * 1.05
@@ -3333,7 +3368,7 @@ function renderCompanyContractsHtml(stats) {
       ${ceilLine}${perfLine}${naicsLine}${pscLine}
     </div>`;
   }).join('');
-  const more = stats.contracts.length > 100 ? `<div style="font-size:8px;color:rgba(255,255,255,.3);padding:6px 0;text-align:center;font-family:'Share Tech Mono',monospace">Showing top 100 of ${stats.contracts.length}</div>` : '';
+  const more = stats.contracts.length > 100 ? `<div style="font-size:8px;color:var(--dim);padding:6px 0;text-align:center;font-family:'Share Tech Mono',monospace">Showing top 100 of ${stats.contracts.length}</div>` : '';
   return `<div class="cp-section"><div class="cp-section-title">Contracts (${stats.contracts.length})</div>${rows}${more}</div>`;
 }
 
@@ -3383,7 +3418,7 @@ async function openCompanyProfile(name) {
   currentWatchCompany = name;
   syncWatchBtn();
   nameEl.textContent = name;
-  body.innerHTML = `<div style="padding:20px 14px;font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">Loading…</div>`;
+  body.innerHTML = `<div style="padding:20px 14px;font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace;letter-spacing:1px">Loading…</div>`;
   panel.classList.add('open');
 
   // Check company contract cache
@@ -3475,7 +3510,7 @@ async function openCompanyProfile(name) {
         await refreshStockPrice(name);
       } else {
         const priceEl = document.getElementById('cp-price-display');
-        if (priceEl) priceEl.innerHTML = `<span style="font-size:9px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace">Enter ticker manually</span>`;
+        if (priceEl) priceEl.innerHTML = `<span style="font-size:9px;color:var(--dim);font-family:'Share Tech Mono',monospace">Enter ticker manually</span>`;
       }
     });
   } else {
@@ -3548,7 +3583,7 @@ async function fetchAndRenderChart(ticker, range, interval, isUp) {
       const price = minC + pct * span;
       const y = toY(price).toFixed(1);
       return `<line x1="0" y1="${y}" x2="${PW}" y2="${y}" stroke="rgba(255,255,255,.07)" stroke-width="1" stroke-dasharray="3,3"/>
-              <text x="${PW + 4}" y="${(parseFloat(y) + 3).toFixed(0)}" font-size="7" fill="rgba(255,255,255,.4)" font-family="monospace">$${price.toFixed(0)}</text>`;
+              <text x="${PW + 4}" y="${(parseFloat(y) + 3).toFixed(0)}" font-size="7" fill="rgba(170,255,204,.55)" font-family="monospace">$${price.toFixed(0)}</text>`;
     }).join('');
 
     // Date labels on X axis
@@ -3556,9 +3591,9 @@ async function fetchAndRenderChart(ticker, range, interval, isUp) {
     const dateY = PAD_T + PH + PAD_B - 2;
     const mid   = Math.floor(pairs.length / 2);
     const dateLabels = `
-      <text x="0" y="${dateY}" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace">${fmtTs(pairs[0].t)}</text>
-      <text x="${(PW/2).toFixed(0)}" y="${dateY}" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace" text-anchor="middle">${fmtTs(pairs[mid].t)}</text>
-      <text x="${PW}" y="${dateY}" font-size="7" fill="rgba(255,255,255,.3)" font-family="monospace" text-anchor="end">${fmtTs(pairs[pairs.length-1].t)}</text>`;
+      <text x="0" y="${dateY}" font-size="7" fill="rgba(170,255,204,.55)" font-family="monospace">${fmtTs(pairs[0].t)}</text>
+      <text x="${(PW/2).toFixed(0)}" y="${dateY}" font-size="7" fill="rgba(170,255,204,.55)" font-family="monospace" text-anchor="middle">${fmtTs(pairs[mid].t)}</text>
+      <text x="${PW}" y="${dateY}" font-size="7" fill="rgba(170,255,204,.55)" font-family="monospace" text-anchor="end">${fmtTs(pairs[pairs.length-1].t)}</text>`;
 
     const svg  = document.getElementById('cp-chart-svg');
     const wrap = document.getElementById('cp-chart-wrap');
@@ -3692,8 +3727,8 @@ function renderCountryBody(body, contracts, fromApi, code) {
     ? `<a href="https://open.canada.ca" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">Open Canada</a>`
     : `<a href="https://www.usaspending.gov" target="_blank" rel="noopener" style="color:rgba(var(--accent-rgb),.5);text-decoration:none">USASpending.gov</a>`;
   const sourceNote = (fromApi || isExtSrcCt)
-    ? `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttrCt}${isExtSrcCt ? '' : ' · Since Oct 2007'}</div>`
-    : `<div style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttrCt}</div>
+    ? `<div style="font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">Data: ${srcAttrCt}${isExtSrcCt ? '' : ' · Since Oct 2007'}</div>`
+    : `<div style="font-size:8px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:8px;letter-spacing:.5px">From current loaded dataset · ${srcAttrCt}</div>
        <button class="cp-load-all-btn" id="ctp-load-all-btn" data-act="load-all-country" data-code="${esc(code || '')}">⬇ Load All from API</button>
        <div id="ctp-api-progress" style="font-size:9px;color:rgba(255,255,255,.35);font-family:'Share Tech Mono',monospace;margin-top:6px;letter-spacing:.5px"></div>`;
 
@@ -4507,7 +4542,11 @@ function switchDataSource(src) {
   fetching = false;
   renderGlobe([]); renderSidebar([]);
   document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
-  document.querySelectorAll('.dsrc-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.src === src));
+  document.querySelectorAll('.dsrc-btn').forEach(btn => {
+    const isActive = btn.dataset.src === src;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
   const params = new URLSearchParams(location.search);
   if (src === 'us') params.delete('src'); else params.set('src', src);
   const qs = params.toString();
@@ -4942,6 +4981,7 @@ async function boot() {
   setLoadProgress(5, 'Initializing...');
   fetchCompanyOverrides(); // fire-and-forget; overrides ready before any panel opens
   try {
+    await cesiumReady; // Cesium.js loads deferred; wait for it only on the path that actually needs it
     await initCesium(token);
     await loadData();
     clearInterval(refreshTimer);
@@ -5153,7 +5193,7 @@ function switchTab(tab) {
 function renderTopMovers() {
   if (currentTab !== 'movers') return;
   const el = document.getElementById('top-movers');
-  if (!allContracts.length) { el.innerHTML = '<div style="padding:20px;font-size:9px;color:rgba(255,255,255,.3)">No data</div>'; return; }
+  if (!allContracts.length) { el.innerHTML = '<div style="padding:20px;font-size:9px;color:var(--dim)">No data</div>'; return; }
   const byName = {}, countByName = {};
   allContracts.forEach(c => {
     const n = c['Recipient Name'] || '—';
@@ -5211,7 +5251,7 @@ function renderWatchlist() {
   const countEl = document.getElementById('wl-count');
   countEl.textContent = list.length ? `(${list.length})` : '';
   if (!list.length) {
-    container.innerHTML = '<div style="padding:12px 14px;font-size:9px;color:rgba(255,255,255,.3)">No companies watched yet.</div>';
+    container.innerHTML = '<div style="padding:12px 14px;font-size:9px;color:var(--dim)">No companies watched yet.</div>';
     return;
   }
   container.innerHTML = list.map(name => {
@@ -5303,7 +5343,11 @@ function restoreFromUrl() {
 
   if (src && ['us', 'uk', 'ca'].includes(src)) {
     dataSource = src;
-    document.querySelectorAll('.dsrc-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.src === src));
+    document.querySelectorAll('.dsrc-btn').forEach(btn => {
+      const isActive = btn.dataset.src === src;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
     document.getElementById('agency-filter-row').style.display = src === 'us' ? '' : 'none';
   }
   if (agency) {
@@ -5322,6 +5366,15 @@ function restoreFromUrl() {
     if (naicsSel) naicsSel.dataset.restoreVal = naics;
   }
 }
+
+// ─── Keyboard activation for div-based controls (role="button") ──────────────
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest('[role="button"]');
+  if (!el || el.tagName === 'BUTTON') return;
+  e.preventDefault();
+  el.click();
+});
 
 // ─── Keyboard shortcuts ───────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {

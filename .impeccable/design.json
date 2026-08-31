@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-31T00:00:00.000Z",
+  "title": "Design System: Global Contract Tracker",
+  "extensions": {
+    "colorMeta": {
+      "signal-green": { "role": "primary", "displayName": "Signal Green", "canonical": "#00ff88", "tonalRamp": ["#001a0d", "#00331a", "#004d26", "#006633", "#00cc6a", "#00ff88", "#66ffb8", "#ccffe6"] },
+      "void-navy": { "role": "neutral", "displayName": "Void Navy", "canonical": "rgb(0, 4, 18)", "tonalRamp": ["#000000", "#00020c", "#000412", "#000920", "#001430", "#002448", "#0a3868", "#2a5a92"] },
+      "void-navy-deep": { "role": "neutral", "displayName": "Void Navy Deep", "canonical": "rgb(0, 2, 12)", "tonalRamp": ["#000000", "#00010a", "#00020c", "#000714", "#001222", "#002038", "#083258", "#245080"] },
+      "alert-red": { "role": "secondary", "displayName": "Alert Red", "canonical": "#ff4444", "tonalRamp": ["#330000", "#660000", "#990d0d", "#cc1a1a", "#ff4444", "#ff7777", "#ffaaaa", "#ffdddd"] },
+      "amber-flag": { "role": "secondary", "displayName": "Amber Flag", "canonical": "#ffcc00", "tonalRamp": ["#332900", "#665200", "#997a00", "#cca300", "#ffcc00", "#ffdb4d", "#ffe999", "#fff5cc"] },
+      "recon-cyan": { "role": "secondary", "displayName": "Recon Cyan", "canonical": "#00aaff", "tonalRamp": ["#00222f", "#00445f", "#00668f", "#0088bf", "#00aaff", "#4dc4ff", "#99ddff", "#ccefff"] },
+      "intel-violet": { "role": "secondary", "displayName": "Intel Violet", "canonical": "#c060ff", "tonalRamp": ["#2a0d40", "#3f1360", "#551a80", "#7020a0", "#9840c0", "#c060ff", "#d699ff", "#ebccff"] },
+      "mint-readout": { "role": "neutral", "displayName": "Mint Readout", "canonical": "#aaffcc", "tonalRamp": ["#0d3320", "#1a6640", "#289960", "#55cc90", "#aaffcc", "#c2ffdb", "#ddffea", "#f0fff7"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / Chrome", "purpose": "Header title, panel titles, stat values — uppercase Orbitron with a signal-green glow. Never sentence case." },
+      "label": { "displayName": "Label", "purpose": "Section labels, badges, button text — small uppercase Orbitron, letter-spaced." },
+      "body": { "displayName": "Body / Readout", "purpose": "List rows, input text, tooltip values, prose — Share Tech Mono, the 'data the machine reports' voice." }
+    },
+    "shadows": [
+      { "name": "ambient-pulse", "value": "0 0 6px rgba(0,255,136,.3), inset 0 0 6px rgba(0,255,136,.05) → 0 0 18px rgba(0,255,136,.55), inset 0 0 12px rgba(0,255,136,.1) (4s ease-in-out infinite)", "purpose": "Resting-state 'this panel is alive' breathing glow on stat cards." },
+      { "name": "focus-glow", "value": "0 0 10-12px rgba(0,255,136,.2-.3)", "purpose": "Input/button focus and hover state — sharper and brighter than ambient pulse." },
+      { "name": "alert-glow", "value": "0 0 6-12px <semantic color, e.g. #ff4444 or #00aaff>", "purpose": "Live dot, danger buttons, category badges — glow rendered in the element's own semantic hue." },
+      { "name": "panel-lift", "value": "0 -8px 40px rgba(0,0,0,.7)", "purpose": "Physical separation shadow under sheets/panels sliding up over content (mobile sidebar, detail panel) — the one neutral shadow in the system." }
+    ],
+    "motion": [
+      { "name": "sweep-border", "value": "linear-gradient sweep, 3s linear infinite, background-position 0%→200%", "purpose": "Animated accent line across the sidebar's top border, reads as a live-feed cue." },
+      { "name": "pulse-glow", "value": "4s ease-in-out infinite, alternating ambient-pulse shadow values", "purpose": "Breathing glow on resting stat cards and panels." },
+      { "name": "flicker", "value": "12s infinite, opacity 1 → .6 at scattered keyframes", "purpose": "CRT-style flicker on stat values and glowing readouts." },
+      { "name": "glitch", "value": "8s infinite, translate + clip-path + chromatic-aberration color shift at 91-95%", "purpose": "Occasional glitch on the header title, signals 'live transmission.'" },
+      { "name": "corner-pulse", "value": "3s ease-in-out infinite, opacity .5 → 1", "purpose": "HUD corner-bracket accents on stat cards." },
+      { "name": "data-in", "value": ".3s ease both, opacity 0→1 + translateY(6px)→0", "purpose": "Contract list rows animating in as new data arrives." },
+      { "name": "panel-slide", "value": "cubic-bezier(.22,.68,0,1.1), transform translateY", "purpose": "Detail panel / sheet slide-up with a slight overshoot 'snap into place.'" }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "960px" },
+      { "name": "mobile", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Header action button (e.g. spin/pause, data-source picker) — flat instrumented switch, glow on hover.",
+      "html": "<button class=\"ds-btn-primary\">SYNC</button>",
+      "css": ".ds-btn-primary { background: rgba(0,255,136,.06); border: 1px solid rgba(0,255,136,.3); border-radius: 0; color: #00ff88; font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 5px 13px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase; transition: background .15s, box-shadow .15s; } .ds-btn-primary:hover { background: rgba(0,255,136,.15); box-shadow: 0 0 10px rgba(0,255,136,.3); } .ds-btn-primary:focus-visible { outline: 1px solid #00ff88; outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive/paused-state action — same shape language, recolored into Alert Red.",
+      "html": "<button class=\"ds-btn-danger\">DELETE</button>",
+      "css": ".ds-btn-danger { background: rgba(255,60,80,.07); border: 1px solid rgba(255,60,80,.4); border-radius: 0; color: #ff4455; font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 6px 14px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: background .15s; } .ds-btn-danger:hover { background: rgba(255,60,80,.15); } .ds-btn-danger:focus-visible { outline: 1px solid #ff4455; outline-offset: 2px; }"
+    },
+    {
+      "name": "Category Badge",
+      "kind": "chip",
+      "refersTo": "badge-live",
+      "description": "Semantic-category pill (search-match type, detail-record type) — flat rectangle, color = meaning.",
+      "html": "<span class=\"ds-badge ds-badge-cyan\">LOCATION</span>",
+      "css": ".ds-badge { display: inline-block; font-size: 9px; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; text-transform: uppercase; padding: 2px 8px; border-radius: 0; } .ds-badge-cyan { background: rgba(0,180,255,.15); color: #00b4ff; border: 1px solid rgba(0,180,255,.3); } .ds-badge-amber { background: rgba(255,200,0,.12); color: #ffc800; border: 1px solid rgba(255,200,0,.25); } .ds-badge-violet { background: rgba(160,80,255,.15); color: #c060ff; border: 1px solid rgba(160,80,255,.3); } .ds-badge-red { background: rgba(255,100,100,.1); color: #ff8888; border: 1px solid rgba(255,100,100,.35); }"
+    },
+    {
+      "name": "Live Indicator Pill",
+      "kind": "chip",
+      "refersTo": "badge-live",
+      "description": "The one badge with a real circular element inside it (the live-dot) — the pill itself still renders flat under the Sharp-Edge Rule.",
+      "html": "<div class=\"ds-live-pill\"><div class=\"ds-live-dot\"></div>LIVE</div>",
+      "css": ".ds-live-pill { display: flex; align-items: center; gap: 5px; padding: 3px 10px; border: 1px solid rgba(255,68,68,.6); border-radius: 0; font-size: 9px; color: #ff6666; letter-spacing: 2px; background: rgba(255,50,50,.08); box-shadow: 0 0 8px rgba(255,50,50,.2); font-family: 'Share Tech Mono', monospace; text-transform: uppercase; } .ds-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4444; animation: ds-blink 1s ease-in-out infinite; box-shadow: 0 0 6px #ff4444; } @keyframes ds-blink { 0%,100%{opacity:1} 50%{opacity:.15} }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "stat-card",
+      "description": "Live-metric readout card with HUD corner brackets and an ambient pulse glow.",
+      "html": "<div class=\"ds-stat-card\"><div class=\"ds-corner-tl\"></div><div class=\"ds-corner-br\"></div><div class=\"ds-stat-label\">ACTIVE AWARDS</div><div class=\"ds-stat-value\">1,247</div></div>",
+      "css": ".ds-stat-card { background: rgba(0,4,18,.9); border: 1px solid rgba(0,255,136,.2); border-radius: 0; padding: 8px 16px; backdrop-filter: blur(14px); min-width: 105px; position: relative; overflow: hidden; animation: ds-pulse-glow 4s ease-in-out infinite; } @keyframes ds-pulse-glow { 0%,100% { box-shadow: 0 0 6px rgba(0,255,136,.3), inset 0 0 6px rgba(0,255,136,.05); } 50% { box-shadow: 0 0 18px rgba(0,255,136,.55), inset 0 0 12px rgba(0,255,136,.1); } } .ds-corner-tl, .ds-corner-br { content: ''; position: absolute; width: 6px; height: 6px; border-color: #00ff88; border-style: solid; opacity: .6; } .ds-corner-tl { top: 3px; left: 3px; border-width: 1px 0 0 1px; } .ds-corner-br { bottom: 3px; right: 3px; border-width: 0 1px 1px 0; } .ds-stat-label { font-size: 8px; color: #4a8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; font-family: 'Share Tech Mono', monospace; } .ds-stat-value { font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700; color: #00ff88; text-shadow: 0 0 12px rgba(0,255,136,.7); }"
+    },
+    {
+      "name": "Contract List Row",
+      "kind": "card",
+      "refersTo": "contract-card",
+      "description": "Sidebar list item — near-transparent at rest, tints and gains a left accent border on hover/active.",
+      "html": "<div class=\"ds-contract-card\"><div class=\"ds-c-recipient\">Lockheed Martin Corp</div><div class=\"ds-c-meta\">DoD · $42.1M</div></div>",
+      "css": ".ds-contract-card { padding: 9px 14px; border-bottom: 1px solid rgba(0,255,136,.04); cursor: pointer; transition: background .15s, border-left-color .15s; border-left: 2px solid transparent; font-family: 'Share Tech Mono', monospace; } .ds-contract-card:hover { background: rgba(0,255,136,.06); border-left-color: rgba(0,255,136,.5); } .ds-contract-card.active { background: rgba(0,255,136,.09); border-left-color: #00ff88; box-shadow: inset 2px 0 8px rgba(0,255,136,.1); } .ds-c-recipient { color: #fff; font-size: 10px; margin-bottom: 2px; } .ds-c-meta { color: rgba(255,255,255,.4); font-size: 9px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Sidebar search field — flat, glass, glows on focus.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search recipients, agencies…\" />",
+      "css": ".ds-input { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.04); border: 1px solid rgba(0,255,136,.2); border-radius: 0; padding: 6px 10px; color: #aaffcc; font-size: 10px; font-family: 'Share Tech Mono', monospace; outline: none; transition: border-color .2s, box-shadow .2s; } .ds-input:focus { border-color: #00ff88; box-shadow: 0 0 10px rgba(0,255,136,.2); } .ds-input::placeholder { color: #2a4a3a; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Signals Intelligence Console",
+    "overview": "This is not a dashboard for browsing data — it's a listening post. The interface reads as a covert monitoring console watching contract money move across the globe in real time: a black void background, a glowing green cursor-language, hairline instrument borders, and a persistent CRT scanline texture that never lets the surface feel soft or consumer-grade. The mood is covert, charged, and precise — every readout looks calibrated, every panel looks like it's actively receiving a live feed, and nothing about it should read as a friendly SaaS analytics dashboard. There is no ornament that isn't also a signal.\n\nThe globe itself is the sensor feed; every UI panel (header, stat cards, sidebar, detail panel) is a floating overlay of glass and hairline borders that never competes with it for visual weight. Glow is functional, not decorative: dim and flat means \"at rest,\" a lit glow means \"this is live, focused, or drawing your attention right now.\" Corners are sharp everywhere except the handful of elements that are literally round objects (status dots, a spinner) — nothing is rounded for softness's sake.",
+    "keyCharacteristics": [
+      "Near-black void background (rgb(0,4,18)) with a single reserved signal-green accent (#00ff88)",
+      "Persistent CRT scanline overlay across the full viewport (toggleable, not decoration you'd notice being asked for)",
+      "Orbitron for display/label chrome, Share Tech Mono for body and data — both monospace-derived, console-native",
+      "Glow (colored box-shadow/text-shadow) carries meaning; there are no neutral drop shadows anywhere in the system",
+      "Hard rectilinear geometry everywhere except literal circles (live-indicator dots, the loading spinner)",
+      "A reserved secondary palette (red / amber / cyan / violet) exists strictly for semantic categories — never used decoratively, never substituted for the primary accent"
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Signal Green is the only color that means \"primary / live / focus.\" The reserved secondary hues (red, amber, cyan, violet) are categorical labels, not alternate accents — a component never borrows one of them to mean \"important,\" only to mean its one assigned category.", "section": "colors" },
+      { "name": "The Light-Mode Inversion", "body": "A body.theme-light variant exists: it swaps --bg-base/--bg-deep to near-white values and remaps text neutrals to dark navy, while every accent and semantic hue stays exactly the same. Theming inverts the void, never the signal palette.", "section": "colors" },
+      { "name": "The Uppercase Chrome Rule", "body": "Any Orbitron text in the interface is UI chrome (labels, titles, badges), always uppercase, always letter-spaced. Orbitron never appears as sentence-case prose; that job belongs to Share Tech Mono.", "section": "typography" },
+      { "name": "The Glow-Not-Shadow Rule", "body": "Depth and emphasis are conveyed by colored glow intensity, never by a neutral gray drop-shadow (the one exception is the physical \"lift\" shadow under sheets/panels that slide up over content). If something needs to look important, it gets brighter — it does not get a shadow.", "section": "elevation" },
+      { "name": "The Sharp-Edge Rule", "body": "A global rule forces border-radius: 0 !important on every element and pseudo-element in the system. The only exceptions are literal round objects: the live-indicator dot, legend dots, the range-slider thumb, and the loading spinner. A component's CSS may still declare a small radius as a legacy value, but it renders flat regardless.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do keep Signal Green reserved for \"primary / live / focused\" — if a new element needs emphasis and isn't literally live data, reach for glow intensity or letter-spacing before reaching for a new color.",
+      "Do use glow (colored box-shadow / text-shadow) to signal state changes; scale it up for focus/hover, down for rest.",
+      "Do keep corners flat everywhere; a literal circle is only correct for a status dot, a slider thumb, or a spinner.",
+      "Do assign new categorical data types to a hue from the existing reserved set (red/amber/cyan/violet) rather than inventing a new one, unless a genuinely new category is needed.",
+      "Do keep panel backgrounds translucent (4-9% for surfaces, up to ~98% for slide-up sheets) so the globe stays visible through the UI chrome wherever possible."
+    ],
+    "donts": [
+      "Don't round a corner for comfort or softness — the Sharp-Edge Rule has no \"friendly\" exception.",
+      "Don't add a neutral gray drop-shadow for elevation; depth comes from blur + glow, not shadow, except the physical lift-shadow under a sheet that's sliding up.",
+      "Don't use Orbitron for sentence-case prose, and don't use Share Tech Mono for short uppercase chrome labels — the two fonts mark two different kinds of text.",
+      "Don't let this drift toward a soft, rounded, pastel consumer-SaaS dashboard look (Stripe/Notion-style) — the console-instrument identity is the whole point.",
+      "Don't borrow a semantic hue (red/amber/cyan/violet) to add visual variety to something that isn't that category — every non-green color on screen is a label, not a decoration."
+    ]
+  }
+}
